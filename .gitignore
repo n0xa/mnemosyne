@@ -1,0 +1,51 @@
+mnemosyne.cfg
+*.py[co]
+.idea
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+data/auth
+data/beaker
+#Translations
+*.mo
+
+#Mr Developer
+.mr.developer.cfg
+
+.DS_store
+test.db
+log.txt
+.log
+*.log
+
+#sphinx stuff
+doc/_build
+
+.noseids
+
+*.cache
+
+*.lock
+data/cork/*.json
+
+server.key
+
+server.crt
+
+/env
