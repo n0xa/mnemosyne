@@ -1,0 +1,23 @@
+FROM ubuntu:17.10
+
+LABEL maintainer Alexander Merck <breakfastdub@gmail.com>
+LABEL name "chn-mnemosyne"
+LABEL version "0.1"
+LABEL release "1"
+LABEL summary "Community Honey Network mnemosyne server"
+LABEL description "mnemosyne is a normalizer for honeypot data."
+LABEL authoritative-source-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
+LABEL changelog-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
+
+ENV playbook "mnemosyne.yml"
+
+RUN apt-get update \
+    && apt-get install -y ansible
+
+RUN echo "localhost ansible_connection=local" >> /etc/ansible/hosts
+ADD . /opt/
+RUN ansible-playbook /opt/${playbook}
+
+EXPOSE 8181
+
+ENTRYPOINT ["/usr/bin/runsvdir", "-P", "/etc/service"]
