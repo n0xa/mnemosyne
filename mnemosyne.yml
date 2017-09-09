@@ -1,0 +1,73 @@
+---
+  - hosts: all
+
+    tasks:
+      - name: Gather | print os info
+        debug:
+          msg: "{{ ansible_distribution }}-{{ ansible_distribution_major_version}}"
+
+      - name: Gather | os info
+        include_vars: "{{ item }}"
+        with_first_found:
+          - "{{ ansible_distribution }}-{{ ansible_distribution_major_version}}.yml"
+          - "{{ ansible_distribution }}.yml"
+        tags: vars
+
+      - name: Gather | default info
+        include_vars:
+          file: default.yml
+        tags: vars
+
+      - name: Mnemosyne | install dependency packages
+        package:
+          name: "{{ item }}"
+        with_items: "{{ pkgs }}"
+
+      - name: Mnemosyne | install os-specific dependency packages
+        package:
+          name: "{{ item }}"
+        with_items: "{{ pkgs_osspec }}"
+
+      - name: Mnemosyne | install python requirements
+        pip:
+          requirements: /opt/requirements.txt
+
+      - name: Mnemosyne | clone hpfeeds for utils
+        git:
+          repo: "{{ hpfeeds_repo }}"
+          version: "{{ hpfeeds_version }}"
+          dest: "{{ hpfeeds_dir }}"
+          accept_hostkey: yes
+          depth: 1
+
+      - name: Mnemosyne | link to hpfeeds in mnemosyne
+        file:
+          state: link
+          src: "{{ hpfeeds_dir}}/hpfeeds/lib/hpfeeds.py"
+          dest: "{{ mnemosyne_dir }}/mnemosyne/hpfeeds.py"
+
+      - name: Mnemosyne | copy sysconfig file
+        copy:
+          src: mnemosyne.sysconfig
+          dest: "{{ sysconfig_dir }}/mnemosyne"
+          mode: 0644
+
+      - name: Mnemosyne | install Runit
+        yum:
+          name: "{{ runit_rpm_src }}"
+          state: present
+        when: ansible_distribution|lower == 'centos'
+
+      - name: Mnemosyne | create runit service dirs
+        file:
+          path: /etc/service/mnemosyne
+          state: directory
+          mode: 0755
+
+      - name: Mnemosyne | copy runit runfile
+        template:
+          src: mnemosyne.run.j2
+          dest: /etc/service/mnemosyne/run
+          owner: root
+          group: root
+          mode: 0755

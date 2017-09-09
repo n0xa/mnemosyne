@@ -1,0 +1,11 @@
+# This file is read from /etc/sysconfig/mnemosyne
+# or /etc/default/mnemosyne, depending on the distro version
+#
+# Defaults here are for containers, but can be adjusted
+# after install for a regular server or to customize the containers
+
+HPFEEDS_HOST='hpfeeds'
+HPFEEDS_PORT=10000
+
+MONGODB_HOST='mongodb'
+MONGODDB_PORT=27017

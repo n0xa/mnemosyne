@@ -1,0 +1,35 @@
+#!/bin/bash
+
+trap "exit 130" SIGINT
+trap "exit 137" SIGKILL
+trap "exit 143" SIGTERM
+
+source {{ sysconfig_dir }}/mnemosyne
+export $PYTHONPATH
+
+cd {{ mnemosyne_dir }}
+if [[ ! -f ./mnemosyne.cfg ]]
+then
+    IDENT=mnemosyne
+    SECRET=`python -c 'import uuid;print str(uuid.uuid4()).replace("-","")'`
+    CHANNELS='amun.events,conpot.events,thug.events,beeswarm.hive,dionaea.capture,dionaea.connections,thug.files,beeswarn.feeder,cuckoo.analysis,kippo.sessions,cowrie.sessions,glastopf.events,glastopf.files,mwbinary.dionaea.sensorunique,snort.alerts,wordpot.events,p0f.events,suricata.events,shockpot.events,elastichoney.events'
+
+    cp ./mnemosyne.cfg.template ./mnemosyne.cfg
+
+    sed -i "s/ident = .*/ident = $IDENT/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/secret = .*/secret = $SECRET/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/host = .*/host = $HPFEEDS_HOST/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/port = .*/port = $HPFEEDS_PORT/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/channels = .*/channels = $CHANNELS/" {{ mnemosyne_dir }}/mnemosyne.cfg
+
+    # Generate config file for hpfeeds broker and register
+    python {{ hpfeeds_dir }}/hpfeeds/broker/generateconfig.py unattended ${MONGODB_HOST} ${MONGODB_PORT}
+    python {{ hpfeeds_dir }}/hpfeeds/broker/add_user.py "$IDENT" "$SECRET" "" "$CHANNELS"
+
+fi
+
+echo "Starting mnemosyne..."
+echo "HPFEEDS_HOST = ${HPFEEDS_HOST}"
+echo "HPFEEDS_PORT = ${HPFEEDS_PORT}"
+
+exec /usr/bin/env python {{ mnemosyne_dir }}/mnemosyne/runner.py --config {{ mnemosyne_dir }}/mnemosyne.cfg
