@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class MnemoWebAPI():
     """Exposes raw and normalized data from hpfeeds through a RESTful api"""
 
-    def __init__(self, datebase_name, static_file_path=None, data_dir='./data', loggly_token=None):
+    def __init__(self, datebase_name, static_file_path=None, data_dir='./mnemosyne/data', loggly_token=None):
 
         cork_dir = os.path.join(data_dir, 'cork')
         beaker_dir = os.path.join(data_dir, 'beaker')
