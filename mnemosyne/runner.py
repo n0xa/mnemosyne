@@ -55,13 +55,15 @@ def parse_config(config_file):
     if parser.getboolean('loggly_log', 'enabled'):
         config['loggly_token'] = parser.get('loggly_log', 'token')
 
+    config['mongo_host'] = parser.get('mongodb', 'mongo_host')
+    config['mongo_port'] = parser.getint('mongodb', 'mongo_port')
     config['mongo_db'] = parser.get('mongodb', 'database')
 
     config['hpf_feeds'] = parser.get('hpfriends', 'channels').split(',')
     config['hpf_ident'] = parser.get('hpfriends', 'ident')
     config['hpf_secret'] = parser.get('hpfriends', 'secret')
-    config['hpf_port'] = parser.getint('hpfriends', 'port')
-    config['hpf_host'] = parser.get('hpfriends', 'host')
+    config['hpf_port'] = parser.getint('hpfriends', 'hp_port')
+    config['hpf_host'] = parser.get('hpfriends', 'hp_host')
 
     config['webapi_port'] = parser.getint('webapi', 'port')
     config['webapi_host'] = parser.get('webapi', 'host')
@@ -113,7 +115,8 @@ if __name__ == '__main__':
 
     greenlets = {}
 
-    db = mnemodb.MnemoDB(c['mongo_db'])
+    db = mnemodb.MnemoDB(host=c['mongo_host'], port=c['mongo_port'],
+                         database_name=c['mongo_db'])
 
     webapi = None
     hpfriends_puller = None

@@ -27,9 +27,9 @@ class ReportGenerator:
     Generates pre-aggregated reports.
     """
 
-    def __init__(self, database_name):
+    def __init__(self, host, port, database_name):
         logger.info('Connecting to mongodb, using "{0}" as database.'.format(database_name))
-        conn = MongoClient(w=0)
+        conn = MongoClient(host=host, port=port, w=0)
         self.db = conn[database_name]
 
     def hpfeeds(self, entry):
