@@ -1,16 +1,38 @@
-language: generic
+language: python
 
 sudo: required
 
 services:
   - docker
+  - mongodb
+
+python:
+  - "2.7"
+
+virtualenv:
+  system_site_packages: true
+
+before_install:
+ - "sudo apt-get update"
+ - "sudo apt-get install python-dev libevent-dev"
+
+install:
+  - "sudo pip install -r requirements.txt --use-mirrors"
+
+script:
+ - nosetests
+ 
+after_success:
+ - pip install --upgrade distribute
+ - pip install --upgrade coveralls coverage sh
+ - nosetests --with-coverage --cover-package=mnemosyne
+ - coveralls
 
 script:
   - "docker-compose build"
-  # Add tests here
-  #- "docker-compose up" 
 
 notifications:
   email:
     - collins.christopher@gmail.com
     - breakfastdub@gmail.com
+
