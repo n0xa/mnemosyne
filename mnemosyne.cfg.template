@@ -4,13 +4,15 @@ host = 0.0.0.0
 port = 8181
 
 [mongodb]
+mongo_host = localhost
+mongo_port = 27017
 database = mnemosyne
 
 [hpfriends]
 ident =
 secret =
-host = hpfriends.honeycloud.net
-port = 20000
+hp_host = hpfriends.honeycloud.net
+hp_port = 20000
 channels = amun.events,conpot.events,thug.events,beeswarm.hive,dionaea.capture,thug.files,beeswarn.feeder,cuckoo.analysis,kippo.sessions,cowrie.sessions,glastopf.events,glastopf.files,mwbinary.dionaea.sensorunique,wordpot.events,shockpot.events,p0f.events,suricata.events,elastichoney.events
 
 [file_log]
