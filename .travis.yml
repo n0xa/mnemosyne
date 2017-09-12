@@ -1,5 +1,10 @@
 language: python
-services: mongodb
+
+sudo: required
+
+services:
+  - docker
+  - mongodb
 
 python:
   - "2.7"
@@ -22,3 +27,12 @@ after_success:
  - pip install --upgrade coveralls coverage sh
  - nosetests --with-coverage --cover-package=mnemosyne
  - coveralls
+
+script:
+  - "docker-compose build"
+
+notifications:
+  email:
+    - collins.christopher@gmail.com
+    - breakfastdub@gmail.com
+
