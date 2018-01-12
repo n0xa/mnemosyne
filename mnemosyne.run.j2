@@ -23,6 +23,7 @@ then
     sed -i "s/channels *=.*/channels = $CHANNELS/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/mongo_host *=.*/mongo_host = ${MONGODB_HOST}/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/mongo_port *=.*/mongo_port = ${MONGODB_PORT}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/ignore_rfc1918 *=.*/ignore_rfc1918 = ${IGNORE_RFC1918}/" {{ mnemosyne_dir }}/mnemosyne.cfg
 
 
     # Generate config file for hpfeeds broker and register
