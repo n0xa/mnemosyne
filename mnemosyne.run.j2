@@ -18,8 +18,6 @@ then
 
     # Generate config file for hpfeeds broker and try to register
     # Exit if failed, and try again
-    cd {{ hpfeeds_dir }}/hpfeeds/broker/
-
     python {{ hpfeeds_dir }}/hpfeeds/broker/generateconfig.py unattended \
         --mongo_host ${MONGODB_HOST} \
         --mongo_port ${MONGODB_PORT} || exit 1
@@ -31,7 +29,7 @@ then
         "${SECRET}" \
         "" \
         "${CHANNELS}" || exit 1
-
+    
     cp ./mnemosyne.cfg.template ./mnemosyne.cfg
 
     sed -i "s/ident *=.*/ident = ${IDENT}/" {{ mnemosyne_dir }}/mnemosyne.cfg
