@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -o errexit
 
 trap "exit 130" SIGINT
 trap "exit 137" SIGKILL
@@ -14,22 +16,33 @@ then
     SECRET=`python -c 'import uuid;print str(uuid.uuid4()).replace("-","")'`
     CHANNELS='amun.events,conpot.events,thug.events,beeswarm.hive,dionaea.capture,dionaea.connections,thug.files,beeswarn.feeder,cuckoo.analysis,kippo.sessions,cowrie.sessions,glastopf.events,glastopf.files,mwbinary.dionaea.sensorunique,snort.alerts,wordpot.events,p0f.events,suricata.events,shockpot.events,elastichoney.events,rdphoney.sessions'
 
+    # Generate config file for hpfeeds broker and try to register
+    # Exit if failed, and try again
+    cd {{ hpfeeds_dir }}/hpfeeds/broker/
+
+    python {{ hpfeeds_dir }}/hpfeeds/broker/generateconfig.py unattended \
+        --mongo_host ${MONGODB_HOST} \
+        --mongo_port ${MONGODB_PORT} || exit 1
+
+    # Third field is a positional parameter for "Publish"
+    # which we do not use here, so it's a blank string
+    python {{ hpfeeds_dir }}/hpfeeds/broker/add_user.py \
+        "${IDENT}" \
+        "${SECRET}" \
+        "" \
+        "${CHANNELS}" || exit 1
+
     cp ./mnemosyne.cfg.template ./mnemosyne.cfg
 
-    sed -i "s/ident *=.*/ident = $IDENT/" {{ mnemosyne_dir }}/mnemosyne.cfg
-    sed -i "s/secret *=.*/secret = $SECRET/" {{ mnemosyne_dir }}/mnemosyne.cfg
-    sed -i "s/hp_host *=.*/hp_host = $HPFEEDS_HOST/" {{ mnemosyne_dir }}/mnemosyne.cfg
-    sed -i "s/hp_port *=.*/hp_port = $HPFEEDS_PORT/" {{ mnemosyne_dir }}/mnemosyne.cfg
-    sed -i "s/channels *=.*/channels = $CHANNELS/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/ident *=.*/ident = ${IDENT}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/secret *=.*/secret = ${SECRET}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/hp_host *=.*/hp_host = ${HPFEEDS_HOST}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/hp_port *=.*/hp_port = ${HPFEEDS_PORT}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    sed -i "s/channels *=.*/channels = ${CHANNELS}/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/mongo_host *=.*/mongo_host = ${MONGODB_HOST}/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/mongo_port *=.*/mongo_port = ${MONGODB_PORT}/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/ignore_rfc1918 *=.*/ignore_rfc1918 = ${IGNORE_RFC1918}/" {{ mnemosyne_dir }}/mnemosyne.cfg
 
-
-    # Generate config file for hpfeeds broker and register
-    cd {{ hpfeeds_dir }}/hpfeeds/broker/
-    python {{ hpfeeds_dir }}/hpfeeds/broker/generateconfig.py unattended --mongo_host ${MONGODB_HOST} --mongo_port ${MONGODB_PORT}
-    python {{ hpfeeds_dir }}/hpfeeds/broker/add_user.py "$IDENT" "$SECRET" "" "$CHANNELS"
 fi
 
 cd {{ mnemosyne_dir }}
@@ -37,4 +50,5 @@ echo "Starting mnemosyne..."
 echo "HPFEEDS_HOST = ${HPFEEDS_HOST}"
 echo "HPFEEDS_PORT = ${HPFEEDS_PORT}"
 
-exec /usr/bin/env python {{ mnemosyne_dir }}/mnemosyne/runner.py --config {{ mnemosyne_dir }}/mnemosyne.cfg
+exec /usr/bin/env python {{ mnemosyne_dir }}/mnemosyne/runner.py \
+    --config {{ mnemosyne_dir }}/mnemosyne.cfg
