@@ -21,7 +21,7 @@ class RdphoneyEvents(BaseNormalizer):
             'source_port': o_data['src_port'],
             'destination_port': o_data['dest_port'],
             'honeypot': 'uhp',
-            'protocol': o_data['tags'][0],
+            'protocol': 'n/a',
         }
 
         relations = [{'session': session}, ]
