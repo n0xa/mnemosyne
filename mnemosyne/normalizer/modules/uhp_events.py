@@ -5,7 +5,7 @@ from normalizer.modules.basenormalizer import BaseNormalizer
 import sys
 
 
-class RdphoneyEvents(BaseNormalizer):
+class UHPEvents(BaseNormalizer):
     channels = ('uhp.events',)
 
     def normalize(self, data, channel, submission_timestamp, ignore_rfc1918=True):
