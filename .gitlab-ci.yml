@@ -2,6 +2,7 @@
 stages:
   - test
   - build
+  - integration_testing
   - deploy
 
 variables:
