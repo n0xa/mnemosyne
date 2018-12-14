@@ -1,12 +1,6 @@
 version: '2'
 services:
-  centos:
-    build:
-      context: .
-      dockerfile: Dockerfile-centos
-    image: mnemosyne:centos
   ubuntu:
     build:
       context: .
-      dockerfile: Dockerfile-ubuntu
     image: mnemosyne:ubuntu
