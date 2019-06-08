@@ -83,6 +83,7 @@ container_scanning:
 deploy_dockerhub:
   image: docker:stable
   stage: deploy
+    - sudo ntpdate pool.ntp.org
   tags:
     - stingar
   only:
