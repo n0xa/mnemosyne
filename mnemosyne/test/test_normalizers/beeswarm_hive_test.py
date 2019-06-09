@@ -20,7 +20,7 @@ from normalizer.modules import beeswarm_hive
 from datetime import datetime
 
 
-class BeeswarnHiveTest(unittest.TestCase):
+class BeeswarmHiveTest(unittest.TestCase):
     def test_session(self):
         """
         Test if a valid beeswarm json message get parsed as expected.
