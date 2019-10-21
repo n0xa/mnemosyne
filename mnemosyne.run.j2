@@ -45,6 +45,9 @@ then
     sed -i "s/channels *=.*/channels = ${CHANNELS}/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/mongo_host *=.*/mongo_host = ${MONGODB_HOST}/" {{ mnemosyne_dir }}/mnemosyne.cfg
     sed -i "s/mongo_port *=.*/mongo_port = ${MONGODB_PORT}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    if [[ ! -z "${MONGODB_INDEXTTL}" ]]; then
+      sed -i "s/mongo_indexttl *=.*/mongo_indexttl = ${MONGODB_INDEXTTL}/" {{ mnemosyne_dir }}/mnemosyne.cfg
+    fi
     sed -i "s/ignore_rfc1918 *=.*/ignore_rfc1918 = ${IGNORE_RFC1918}/" {{ mnemosyne_dir }}/mnemosyne.cfg
 
 fi

@@ -1,4 +1,4 @@
-pymongo==2.7.2
+pymongo==2.8.1
 gevent==1.0.2
 bottle-mongodb==0.2.1
 bottle-cork==0.6

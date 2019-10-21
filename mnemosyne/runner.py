@@ -58,6 +58,11 @@ def parse_config(config_file):
     config['mongo_host'] = parser.get('mongodb', 'mongo_host')
     config['mongo_port'] = parser.getint('mongodb', 'mongo_port')
     config['mongo_db'] = parser.get('mongodb', 'database')
+    try:
+        config['mongo_indexttl'] = parser.getint('mongodb', 'mongo_indexttl')
+    except ValueError:
+        # if no value set or not an int, just set to False
+        config['mongo_indexttl'] = False 
 
     config['hpf_feeds'] = parser.get('hpfriends', 'channels').split(',')
     config['hpf_ident'] = parser.get('hpfriends', 'ident')
@@ -116,7 +121,7 @@ if __name__ == '__main__':
     greenlets = {}
 
     db = mnemodb.MnemoDB(host=c['mongo_host'], port=c['mongo_port'],
-                         database_name=c['mongo_db'])
+                         database_name=c['mongo_db'], indexttl=c['mongo_indexttl'])
 
     webapi = None
     hpfriends_puller = None

@@ -32,14 +32,14 @@ logger = logging.getLogger(__name__)
 
 
 class MnemoDB(object):
-    def __init__(self, host, port, database_name):
+    def __init__(self, host, port, database_name, indexttl=False):
         logger.info('Connecting to mongodb, using "{0}" as database.'.format(database_name))
         conn = MongoClient(host=host, port=port, auto_start_request=False)
         self.rg = ReportGenerator(host=host, port=port, database_name=database_name)
         self.db = conn[database_name]
-        self.ensure_index()
+        self.ensure_index(indexttl)
 
-    def ensure_index(self):
+    def ensure_index(self, indexttl):
         self.db.hpfeed.ensure_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
         self.db.url.ensure_index('url', unique=True, background=True)
         self.db.url.ensure_index('extractions.hashes.md5', unique=False, background=True)
@@ -54,13 +54,49 @@ class MnemoDB(object):
         self.db.session.ensure_index('destination_ip', unique=False, background=True)
         self.db.session.ensure_index('source_port', unique=False, background=True)
         self.db.session.ensure_index('honeypot', unique=False, background=True)
-        self.db.session.ensure_index('timestamp', unique=False, background=True)
+        self.set_coll_indexttl('session', indexttl)
+        self.set_coll_indexttl('hpfeed', indexttl)
         self.db.session.ensure_index('identifier', unique=False, background=True)
         self.db.daily_stats.ensure_index([('channel', 1), ('date', 1)])
         self.db.counts.ensure_index([('identifier', 1), ('date', 1)])
         self.db.counts.ensure_index('identifier', unique=False, background=True)
         self.db.metadata.ensure_index([('ip', 1), ('honeypot', 1)])
         self.db.metadata.ensure_index('ip', unique=False, background=True)
+
+    def set_coll_indexttl(self, coll, indexttl):
+        """Sets the Index TTL (expireAfterSeconds property) on the timestamp field
+        of a collection.
+        Inputs: 
+            coll (str): collection name
+            indexttl (int): number, in seconds, of how long after timestamp field value
+                before Mongo TTL worker removes the expired document
+        Outputs: none
+        """ 
+        coll_info_timestamp = self.db[coll].index_information().get('timestamp_1')
+        if coll_info_timestamp:
+            coll_info_ttlsecs = coll_info_timestamp.get('expireAfterSeconds')
+        else:
+            coll_info_ttlsecs = None
+        # if expireAfterSeconds not set on Index and indexttl != False
+        if not coll_info_ttlsecs and indexttl != False:
+            if coll_info_timestamp:
+                self.db[coll].drop_index('timestamp_1')
+            self.db[coll].ensure_index('timestamp', unique=False, 
+                background=True, expireAfterSeconds=indexttl)
+        # if expireAfterSeconds IS set but indexttl == False (indicating it no longer should be)
+        elif coll_info_ttlsecs and indexttl == False:
+            self.db[coll].drop_index('timestamp_1')
+            self.db[coll].ensure_index('timestamp', unique=False, background=True)
+        # if a user has changed the expireTTL value since last set
+        elif coll_info_ttlsecs and indexttl != False and indexttl != coll_info_ttlsecs:
+            self.db.command('collMod', coll, 
+                index = {   'keyPattern': { 'timestamp': 1},
+                            'background': True,
+                            'expireAfterSeconds': indexttl
+                })
+        #self.db.session.ensure_index('timestamp', unique=False, background=True)
+        #self.db.hpfeed.ensure_index('timestamp', unique=False, background=True)
+                
 
     def insert_normalized(self, ndata, hpfeed_id, identifier=None):
         assert isinstance(hpfeed_id, ObjectId)
