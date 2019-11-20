@@ -38,6 +38,7 @@ class MnemoDB(object):
         self.rg = ReportGenerator(host=host, port=port, database_name=database_name)
         self.db = conn[database_name]
         self.ensure_index(indexttl)
+        self.compact_database()
 
     def ensure_index(self, indexttl):
         self.db.hpfeed.ensure_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
@@ -96,7 +97,14 @@ class MnemoDB(object):
                 })
         #self.db.session.ensure_index('timestamp', unique=False, background=True)
         #self.db.hpfeed.ensure_index('timestamp', unique=False, background=True)
-                
+    
+    def compact_database(self):
+        # runs 'compact' on each collection in mongodb to free any available space back to OS
+        # warning: 'compact' _IS_ a blocking operation
+        collections = self.db.collection_names()
+        for collection in collections:
+            logger.info('Compacting collection %s', collection)
+            self.db.command('compact', collection, force=True)
 
     def insert_normalized(self, ndata, hpfeed_id, identifier=None):
         assert isinstance(hpfeed_id, ObjectId)
