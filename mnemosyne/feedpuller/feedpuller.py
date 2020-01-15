@@ -58,7 +58,7 @@ class FeedPuller(object):
                 self.hpc.subscribe(self.feeds)
                 self.hpc.run(on_message, on_error)
             except Exception as ex:
-                print ex
+                print(ex)
                 self.hpc.stop()
                 logger.exception('Exception caught: {0}'.format(ex))
             #throttle
