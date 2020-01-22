@@ -85,7 +85,7 @@ class MnemoWebAPI():
         if loggly_token:
             self.app = Loggly(bottle.app(), loggly_token)
         self.app = SessionMiddleware(self.app, session_opts)
-        
+
         root_app = bottle.app()
 
         #setup logging hooks
@@ -147,7 +147,7 @@ class MnemoWebAPI():
         }
         cork._store.save_users()
         #for security reasons we fdo not want this in the log files.
-        print "A 'admin' account has been created with the password '{0}'".format(password)
+        print("A 'admin' account has been created with the password '{0}'".format(password))
 
         return cork
 

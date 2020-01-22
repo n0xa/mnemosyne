@@ -62,7 +62,7 @@ def parse_config(config_file):
         config['mongo_indexttl'] = parser.getint('mongodb', 'mongo_indexttl')
     except ValueError:
         # if no value set or not an int, just set to False
-        config['mongo_indexttl'] = False 
+        config['mongo_indexttl'] = False
 
     config['hpf_feeds'] = parser.get('hpfriends', 'channels').split(',')
     config['hpf_ident'] = parser.get('hpfriends', 'ident')
@@ -128,12 +128,12 @@ if __name__ == '__main__':
     normalizer = None
 
     if args.reset:
-        print 'Renormalization (reset) of a large database can take several days.'
-        answer = raw_input('Write YES if you want to continue: ')
+        print('Renormalization (reset) of a large database can take several days.')
+        answer = input('Write YES if you want to continue: ')
         if answer == 'YES':
             db.reset_normalized()
         else:
-            print 'Aborting'
+            print('Aborting')
             sys.exit(0)
 
     if not args.no_feedpuller:
