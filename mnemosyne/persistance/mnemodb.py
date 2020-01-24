@@ -24,7 +24,7 @@ from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.errors import InvalidStringData
-from preagg_reports import ReportGenerator
+from persistance.preagg_reports import ReportGenerator
 from gevent import Greenlet
 
 
@@ -79,24 +79,24 @@ class MnemoDB(object):
         else:
             coll_info_ttlsecs = None
         # if expireAfterSeconds not set on Index and indexttl != False
-        if not coll_info_ttlsecs and indexttl != False:
+        if not coll_info_ttlsecs and indexttl:
             if coll_info_timestamp:
                 self.db[coll].drop_index('timestamp_1')
             self.db[coll].ensure_index('timestamp', unique=False, 
-                background=True, expireAfterSeconds=indexttl)
+                                       background=True, expireAfterSeconds=indexttl)
         # if expireAfterSeconds IS set but indexttl == False (indicating it no longer should be)
-        elif coll_info_ttlsecs and indexttl == False:
+        elif coll_info_ttlsecs and not indexttl:
             self.db[coll].drop_index('timestamp_1')
             self.db[coll].ensure_index('timestamp', unique=False, background=True)
         # if a user has changed the expireTTL value since last set
-        elif coll_info_ttlsecs and indexttl != False and indexttl != coll_info_ttlsecs:
+        elif coll_info_ttlsecs and indexttl and indexttl != coll_info_ttlsecs:
             self.db.command('collMod', coll, 
-                index = {   'keyPattern': { 'timestamp': 1},
-                            'background': True,
-                            'expireAfterSeconds': indexttl
-                })
-        #self.db.session.ensure_index('timestamp', unique=False, background=True)
-        #self.db.hpfeed.ensure_index('timestamp', unique=False, background=True)
+                            index={'keyPattern': {'timestamp': 1},
+                                   'background': True,
+                                   'expireAfterSeconds': indexttl
+                                   })
+        # self.db.session.ensure_index('timestamp', unique=False, background=True)
+        # self.db.hpfeed.ensure_index('timestamp', unique=False, background=True)
     
     def compact_database(self):
         # runs 'compact' on each collection in mongodb to free any available space back to OS
@@ -108,9 +108,9 @@ class MnemoDB(object):
 
     def insert_normalized(self, ndata, hpfeed_id, identifier=None):
         assert isinstance(hpfeed_id, ObjectId)
-        #ndata is a collection of dictionaries
+        # ndata is a collection of dictionaries
         for item in ndata:
-            #key = collection name, value = content
+            # key = collection name, value = content
             for collection, document in item.items():
                 if collection is 'url':
                     if 'extractions' in document:
@@ -141,26 +141,27 @@ class MnemoDB(object):
                             'ip': document['ip'], 
                             'honeypot': document['honeypot']
                         }
-                        values = dict((k,v) for k,v in document.items() if k not in ['ip', 'honeypot'])
-                        self.db[collection].update(query, {'$set':values}, upsert=True)
+                        values = dict((k, v) for k, v in document.items() if k not in ['ip', 'honeypot'])
+                        self.db[collection].update(query, {'$set': values}, upsert=True)
                 else:
                     raise Warning('{0} is not a know collection type.'.format(collection))
-                    #if we end up here everything if ok - setting hpfeed entry to normalized
+                    # if we end up here everything if ok - setting hpfeed entry to normalized
         self.db.hpfeed.update({'_id': hpfeed_id}, {'$set': {'normalized': True},
                                                    '$unset': {'last_error': 1, 'last_error_timestamp': 1}})
 
     def insert_hpfeed(self, ident, channel, payload):
-        #thanks rep!
-        #mongo can't handle non-utf-8 strings, therefore we must encode
-        #raw binaries
+        # thanks rep!
+        # mongo can't handle non-utf-8 strings, therefore we must encode
+        # raw binaries
         if [i for i in payload[:20] if i not in string.printable]:
             payload = str(payload).encode('hex')
         else:
             payload = str(payload)
             try:
                 payload = json.loads(payload)
-            except ValueError, e:
-                logger.warning('insert_hpfeed: payload was not JSON, storing as a string (ident=%s, channel=%s)', ident, channel)
+            except ValueError:
+                logger.warning('insert_hpfeed: payload was not JSON, storing as a string (ident=%s, channel=%s)',
+                               ident, channel)
 
         timestamp = datetime.utcnow()
         entry = {'channel': channel,
@@ -172,16 +173,17 @@ class MnemoDB(object):
             self.db.hpfeed.insert(entry)
         except InvalidStringData as err:
             logger.error(
-                'Failed to insert hpfeed data on {0} channel due to invalid string data. ({1})'.format(entry['channel'], err))
+                'Failed to insert hpfeed data on {0} channel due to invalid string data. ({1})'.format(
+                    entry['channel'], err))
 
         self.db.counts.update(
-            { 'identifier': ident, 'date': timestamp.strftime('%Y%m%d') },
-            { "$inc": {"event_count": 1} },
+            {'identifier': ident, 'date': timestamp.strftime('%Y%m%d')},
+            {"$inc": {"event_count": 1}},
             upsert=True
         )
         self.db.counts.update(
-            { 'identifier': channel, 'date': timestamp.strftime('%Y%m%d') },
-            { "$inc": {"event_count": 1} },
+            {'identifier': channel, 'date': timestamp.strftime('%Y%m%d')},
+            {"$inc": {"event_count": 1}},
             upsert=True
         )
         self.rg.hpfeeds(entry)
@@ -194,9 +196,9 @@ class MnemoDB(object):
         for item in items:
             self.db.hpfeed.update({'_id': item['_id']},
                                   {'$set':
-                                       {'last_error': str(item['last_error']),
-                                        'last_error_timestamp': item['last_error_timestamp']}
-                                  })
+                                   {'last_error': str(item['last_error']),
+                                    'last_error_timestamp': item['last_error_timestamp']}
+                                   })
 
     def get_hpfeed_data(self, get_before_id, max=250, max_scan=10000):
         """Fetches unnormalized hpfeed items from the datastore.
@@ -208,7 +210,7 @@ class MnemoDB(object):
 
         data = list(self.db.hpfeed.find({'_id': {'$lt': get_before_id}, 'normalized': False,
                                          'last_error': {'$exists': False}}, limit=max,
-                                         sort=[('_id', -1)], max_scan=max_scan))
+                                        sort=[('_id', -1)], max_scan=max_scan))
         return data
 
     def reset_normalized(self):
@@ -234,7 +236,7 @@ class MnemoDB(object):
 
         logger.info('Full reset done in {0} seconds'.format(time.time() - start))
 
-        #This is a one-off job to generate stats for hpfeeds which takes a while.
+        # This is a one-off job to generate stats for hpfeeds which takes a while.
         Greenlet.spawn(self.rg.do_legacy_hpfeeds)
 
     def collection_count(self):

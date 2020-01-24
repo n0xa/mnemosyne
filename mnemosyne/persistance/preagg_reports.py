@@ -40,7 +40,7 @@ class ReportGenerator:
         update = {'$inc': {'hourly.{0}'.format(hour): 1}}
         self.db.daily_stats.update(query, update, upsert=True)
 
-        #update total document
+        # update total document
         channel = entry['channel'].replace('.', '_')
         self.db.daily_stats.update({'_id': 'total'},
                                    {'$inc': {channel: 1}}, upsert=True)
@@ -54,4 +54,3 @@ class ReportGenerator:
             self.hpfeeds(item)
             items += 1
         logger.info('Finished pre-aggregation of historic hpfeeds data. ({0} items.)'.format(items))
-

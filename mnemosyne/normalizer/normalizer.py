@@ -17,27 +17,27 @@
 
 from datetime import datetime
 
-from modules import basenormalizer
-from modules import glastopf_events
-from modules import glastopf_files
-from modules import thug_events
-from modules import thug_files
-from modules import kippo_events
-from modules import cowrie_events
-from modules import dionaea_capture
-from modules import dionaea_binary
-from modules import dionaea_connections
-from modules import beeswarm_hive
-from modules import conpot_events
-from modules import snort_alerts
-from modules import amun_events
-from modules import wordpot_events
-from modules import shockpot_events
-from modules import p0f_events
-from modules import suricata_events
-from modules import elastichoney_events
-from modules import rdphoney_events
-from modules import uhp_events
+from normalizer.modules import basenormalizer
+from normalizer.modules import glastopf_events
+from normalizer.modules import glastopf_files
+from normalizer.modules import thug_events
+from normalizer.modules import thug_files
+from normalizer.modules import kippo_events
+from normalizer.modules import cowrie_events
+from normalizer.modules import dionaea_capture
+from normalizer.modules import dionaea_binary
+from normalizer.modules import dionaea_connections
+from normalizer.modules import beeswarm_hive
+from normalizer.modules import conpot_events
+from normalizer.modules import snort_alerts
+from normalizer.modules import amun_events
+from normalizer.modules import wordpot_events
+from normalizer.modules import shockpot_events
+from normalizer.modules import p0f_events
+from normalizer.modules import suricata_events
+from normalizer.modules import elastichoney_events
+from normalizer.modules import rdphoney_events
+from normalizer.modules import uhp_events
 from bson import ObjectId
 
 import gevent
@@ -54,15 +54,15 @@ logger = logging.getLogger(__name__)
 class Normalizer(object):
     def __init__(self, database, ignore_rfc1918=True):
         self.normalizers = {}
-        #injected instance of database.Database
+        # injected instance of database.Database
         self.database = database
         self.enabled = True
         self.ignore_rfc1918 = ignore_rfc1918
 
-        #max number of concurrent mongodb inserters
+        # max number of concurrent mongodb inserters
         self.worker_pool = Pool(5)
 
-        #map normalizers
+        # map normalizers
         for n in basenormalizer.BaseNormalizer.__subclasses__():
             normalizer = n()
             for channel in normalizer.channels:
@@ -92,7 +92,7 @@ class Normalizer(object):
                                                                    channel, hpfeed_item['timestamp'],
                                                                    ignore_rfc1918=self.ignore_rfc1918)
 
-                        #batch up normalized items
+                        # batch up normalized items
                         to_be_inserted.append((norm, hpfeed_item['_id'], hpfeed_item['ident']))
                         normalizations += 1
                     elif channel not in no_normalizers_warnings:
@@ -106,8 +106,8 @@ class Normalizer(object):
                                        'last_error': err,
                                        'last_error_timestamp': datetime.now()})
                     logger.warning('Failed to normalize and import item with hpfeed id = {0}, channel = {1}. ({2}). '
-                                    'Exception details has been stored in the database.'
-                                    .format(hpfeed_item['_id'], hpfeed_item['channel'], err))
+                                   'Exception details has been stored in the database.'
+                                   .format(hpfeed_item['_id'], hpfeed_item['channel'], err))
 
             if len(error_list) > 0:
                 self.database.hpfeed_set_errors(error_list)
@@ -123,8 +123,8 @@ class Normalizer(object):
         logger.info("Normalizer stopped.")
 
     def inserter(self, to_be_inserted):
-        for norm, id, identifier in to_be_inserted:
-            self.database.insert_normalized(norm, id, identifier)
+        for norm, ident, identifier in to_be_inserted:
+            self.database.insert_normalized(norm, ident, identifier)
 
     def stop(self):
         self.enabled = False

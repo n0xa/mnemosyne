@@ -1,5 +1,5 @@
 import argparse
-import ConfigParser
+import configparser
 
 
 def main():
@@ -17,20 +17,20 @@ def main():
     parser.add_argument("--rfc1918", required=True)
     args = parser.parse_args()
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(args.template)
 
-    config.set('hpfriends', 'ident', args.ident)
-    config.set('hpfriends', 'secret', args.secret)
-    config.set('hpfriends', 'hp_host', args.hpfeeds_host)
-    config.set('hpfriends', 'hp_port', args.hpfeeds_port)
-    config.set('hpfriends', 'channels', args.channels)
+    config['hpfriends']['ident'] = args.ident
+    config['hpfriends']['secret'] = args.secret
+    config['hpfriends']['hp_host'] = args.hpfeeds_host
+    config['hpfriends']['hp_port'] = args.hpfeeds_port
+    config['hpfriends']['channels'] = args.channels
 
-    config.set('mongodb', 'mongo_host', args.mongodb_host)
-    config.set('mongodb', 'mongo_port', args.mongodb_port)
-    config.set('mongodb', 'mongo_indexttl', args.mongodb_ttl)
+    config['mongodb']['mongo_host'] = args.mongodb_host
+    config['mongodb']['mongo_port'] = args.mongodb_port
+    config['mongodb']['mongo_indexttl'] = args.mongodb_ttl
 
-    config.set('normalizer', 'ignore_rfc1918',  args.rfc1918)
+    config['normalizer']['ignore_rfc1918'] = args.rfc1918
 
     with open(args.config, 'w') as configfile:
         config.write(configfile)

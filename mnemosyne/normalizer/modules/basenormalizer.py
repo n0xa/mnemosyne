@@ -18,7 +18,7 @@
 import hashlib
 import socket
 import struct
-from urlparse import urlparse
+from urllib.parse import urlparse
 import json
 
 
@@ -48,7 +48,6 @@ class BaseNormalizer(object):
                 return socket.getservbyport(int(port_number))
             except:
                 return None
-        return None
 
     def generate_checksum_list(self, data):
         result = {}
@@ -58,13 +57,13 @@ class BaseNormalizer(object):
         return result
 
     def is_RFC1918_addr(self, ip):
-        #10.0.0.0 = 167772160
-        #172.16.0.0 = 2886729728
-        #192.168.0.0 = 3232235520
+        # 10.0.0.0 = 167772160
+        # 172.16.0.0 = 2886729728
+        # 192.168.0.0 = 3232235520
         RFC1918_net_bits = ((167772160, 8), (2886729728, 12), (3232235520, 16))
 
         try:
-            #ip to decimal
+            # ip to decimal
             ip = struct.unpack("!L", socket.inet_aton(ip))[0]
         except:
             return False
