@@ -40,7 +40,6 @@ class FeedPuller(object):
         self.enabled = True
 
     def start_listening(self):
-
         gevent.spawn_later(15, self._activity_checker)
         while self.enabled:
             try:

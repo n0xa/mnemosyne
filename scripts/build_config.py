@@ -1,13 +1,17 @@
+import uuid
 import argparse
 import configparser
+
+from hpfeeds.add_user import create_user
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--template", required=True)
     parser.add_argument("--config", required=True)
+    parser.add_argument("--owner", required=True)
     parser.add_argument("--ident", required=True)
-    parser.add_argument("--secret", required=True)
+    parser.add_argument("--secret", required=False, default="")
     parser.add_argument("--hpfeeds-host", required=True)
     parser.add_argument("--hpfeeds-port", required=True)
     parser.add_argument("--channels", required=True)
@@ -20,8 +24,13 @@ def main():
     config = configparser.ConfigParser()
     config.read(args.template)
 
+    if args.secret:
+        secret = args.secret
+    else:
+        secret = str(uuid.uuid4()).replace("-", "")
+
     config['hpfriends']['ident'] = args.ident
-    config['hpfriends']['secret'] = args.secret
+    config['hpfriends']['secret'] = secret
     config['hpfriends']['hp_host'] = args.hpfeeds_host
     config['hpfriends']['hp_port'] = args.hpfeeds_port
     config['hpfriends']['channels'] = args.channels
@@ -31,6 +40,9 @@ def main():
     config['mongodb']['mongo_indexttl'] = args.mongodb_ttl
 
     config['normalizer']['ignore_rfc1918'] = args.rfc1918
+
+    create_user(host=args.mongodb_host, port=int(args.mongodb_port), owner=args.owner,
+                ident=args.ident, secret=secret, publish="", subscribe=args.channels)
 
     with open(args.config, 'w') as configfile:
         config.write(configfile)

@@ -27,13 +27,9 @@ RUN pip3 install git+https://github.com/CommunityHoneyNetwork/hpfeeds3.git
 
 COPY . /opt/
 
-RUN pip3 show hpfeeds3
 
-CMD python3 /usr/local/lib/python3.6/dist-packages/hpfeeds/add_user.py --mongodb-host ${MONGODB_HOST} --mongodb-port ${MONGODB_PORT} \
-        --owner ${OWNER} --ident ${IDENT} --secret ${SECRET} \
-        --publish "" --subscribe ${CHANNELS} \
-    && python3 /opt/scripts/build_config.py --template "/opt/templates/mnemosyne.cfg.template" --config "/opt/mnemosyne.cfg" \
-        --ident ${IDENT} --secret ${SECRET} --hpfeeds-host ${HPFEEDS_HOST} --hpfeeds-port ${HPFEEDS_PORT} \
+CMD python3 /opt/scripts/build_config.py --template "/opt/templates/mnemosyne.cfg.template" --config "/opt/mnemosyne.cfg" \
+        --owner ${OWNER} --ident ${IDENT} --secret "${SECRET}" --hpfeeds-host ${HPFEEDS_HOST} --hpfeeds-port ${HPFEEDS_PORT} \
         --channels ${CHANNELS} --mongodb-host ${MONGODB_HOST} --mongodb-port ${MONGODB_PORT} \
         --mongodb-ttl ${MONGODB_INDEXTTL} --rfc1918 ${IGNORE_RFC1918} \
     && cd /opt/mnemosyne \
