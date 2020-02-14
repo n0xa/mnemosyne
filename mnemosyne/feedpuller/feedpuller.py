@@ -50,7 +50,6 @@ class FeedPuller(object):
                     self.hpc.stop()
 
                 def on_message(ident, chan, payload):
-                    logging.warning("ident=%s, chan=%s, payload=%s" % (ident, chan, payload))
                     self.last_received = datetime.now()
                     if not any(x in chan for x in (';', '"', '{', '}')):
                         self.database.insert_hpfeed(ident, chan, payload.decode("utf-8"))

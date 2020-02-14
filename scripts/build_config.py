@@ -20,7 +20,7 @@ def main():
     MONGODB_HOST = os.environ.get("MONGODB_HOST", "mongodb")
     MONGODB_PORT = os.environ.get("MONGODB_PORT", "27017")
     MONGODB_TTL = os.environ.get("MONGODB_TTL", "")
-    RFC1918 = os.environ.get("RFC1918", "True")
+    RFC1918 = os.environ.get("IGNORE_RFC1918", "True")
 
     config = configparser.ConfigParser()
     config.read(args.template)
