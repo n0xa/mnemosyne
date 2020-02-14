@@ -9,15 +9,13 @@ LABEL description "mnemosyne is a normalizer for honeypot data."
 LABEL authoritative-source-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
 LABEL changelog-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
 
-ENV playbook "mnemosyne.yml"
+ADD requirements.txt /opt/requirements.txt
 
-RUN apt-get update \
-    && apt-get install -y ansible
+RUN apt-get update && apt-get install -y gcc git sqlite mongodb python3-dev python3-pip
+RUN pip3 install -r /opt/requirements.txt
+RUN pip3 install git+https://github.com/CommunityHoneyNetwork/hpfeeds3.git
 
-RUN echo "localhost ansible_connection=local" >> /etc/ansible/hosts
-ADD . /opt/
-RUN ansible-playbook /opt/${playbook}
+COPY . /opt/
+RUN chmod 0755 /opt/entrypoint.sh
 
-EXPOSE 8181
-
-ENTRYPOINT ["/usr/bin/runsvdir", "-P", "/etc/service"]
+ENTRYPOINT ["/opt/entrypoint.sh"]

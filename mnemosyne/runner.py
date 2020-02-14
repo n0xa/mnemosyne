@@ -25,10 +25,9 @@ import argparse
 import logging
 import sys
 
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from normalizer.normalizer import Normalizer
 from persistance import mnemodb
-from webapi import mnemowebapi
 from feedpuller import feedpuller
 
 
@@ -39,41 +38,39 @@ def parse_config(config_file):
     if not os.path.isfile(config_file):
         sys.exit("Could not find configuration file: {0}".format(config_file))
 
-    parser = ConfigParser()
-    parser.read(config_file)
+    cfg_parser = ConfigParser()
+    cfg_parser.read(config_file)
 
     log_file = None
     loggly_token = None
 
-    if parser.getboolean('file_log', 'enabled'):
-        log_file = parser.get('file_log', 'file')
+    if cfg_parser.getboolean('file_log', 'enabled'):
+        log_file = cfg_parser.get('file_log', 'file')
 
     do_logging(log_file, loggly_token)
 
     config = {}
 
-    if parser.getboolean('loggly_log', 'enabled'):
-        config['loggly_token'] = parser.get('loggly_log', 'token')
+    if cfg_parser.getboolean('loggly_log', 'enabled'):
+        config['loggly_token'] = cfg_parser.get('loggly_log', 'token')
 
-    config['mongo_host'] = parser.get('mongodb', 'mongo_host')
-    config['mongo_port'] = parser.getint('mongodb', 'mongo_port')
-    config['mongo_db'] = parser.get('mongodb', 'database')
+    config['mongo_host'] = cfg_parser.get('mongodb', 'mongo_host')
+    config['mongo_port'] = cfg_parser.getint('mongodb', 'mongo_port')
+    config['mongo_db'] = cfg_parser.get('mongodb', 'database')
     try:
-        config['mongo_indexttl'] = parser.getint('mongodb', 'mongo_indexttl')
+        config['mongo_indexttl'] = cfg_parser.getint('mongodb', 'mongo_indexttl')
     except ValueError:
         # if no value set or not an int, just set to False
         config['mongo_indexttl'] = False 
 
-    config['hpf_feeds'] = parser.get('hpfriends', 'channels').split(',')
-    config['hpf_ident'] = parser.get('hpfriends', 'ident')
-    config['hpf_secret'] = parser.get('hpfriends', 'secret')
-    config['hpf_port'] = parser.getint('hpfriends', 'hp_port')
-    config['hpf_host'] = parser.get('hpfriends', 'hp_host')
+    config['hpf_feeds'] = cfg_parser.get('hpfriends', 'channels').split(',')
+    config['hpf_owner'] = cfg_parser.get('hpfriends', 'owner')
+    config['hpf_ident'] = cfg_parser.get('hpfriends', 'ident')
+    config['hpf_secret'] = cfg_parser.get('hpfriends', 'secret')
+    config['hpf_port'] = cfg_parser.getint('hpfriends', 'hp_port')
+    config['hpf_host'] = cfg_parser.get('hpfriends', 'hp_host')
 
-    config['webapi_port'] = parser.getint('webapi', 'port')
-    config['webapi_host'] = parser.get('webapi', 'host')
-
-    config['normalizer_ignore_rfc1918'] = parser.getboolean('normalizer', 'ignore_rfc1918')
+    config['normalizer_ignore_rfc1918'] = cfg_parser.getboolean('normalizer', 'ignore_rfc1918')
 
     return config
 
@@ -100,13 +97,10 @@ if __name__ == '__main__':
     parser.add_argument('--config', dest='config_file', default='mnemosyne.cfg')
     parser.add_argument('--reset', action='store_true', default=False)
     parser.add_argument('--stats', action='store_true', default=False)
-    parser.add_argument('--webpath', default='webapi/views')
     parser.add_argument('--no_normalizer', action='store_true', default=False,
                         help='Do not start the normalizer')
     parser.add_argument('--no_feedpuller', action='store_true', default=False,
                         help='Do not start the broker which takes care of storing hpfeed data.')
-    parser.add_argument('--no_webapi', action='store_true', default=False,
-                        help='Do not enable the webapi.')
 
     args = parser.parse_args()
     c = parse_config(args.config_file)
@@ -123,37 +117,26 @@ if __name__ == '__main__':
     db = mnemodb.MnemoDB(host=c['mongo_host'], port=c['mongo_port'],
                          database_name=c['mongo_db'], indexttl=c['mongo_indexttl'])
 
-    webapi = None
     hpfriends_puller = None
     normalizer = None
 
     if args.reset:
-        print 'Renormalization (reset) of a large database can take several days.'
-        answer = raw_input('Write YES if you want to continue: ')
+        print('Renormalization (reset) of a large database can take several days.')
+        answer = input('Write YES if you want to continue: ')
         if answer == 'YES':
             db.reset_normalized()
         else:
-            print 'Aborting'
+            print('Aborting')
             sys.exit(0)
 
     if not args.no_feedpuller:
         logger.info("Spawning hpfriends feed puller.")
-        hpfriends_puller = feedpuller.FeedPuller(db, c['hpf_ident'], c['hpf_secret'], c['hpf_port'], c['hpf_host'], c['hpf_feeds'])
+        hpfriends_puller = feedpuller.FeedPuller(db, c['hpf_ident'], c['hpf_secret'],
+                                                 c['hpf_port'], c['hpf_host'], c['hpf_feeds'])
         greenlets['hpfriends-puller'] = gevent.spawn(hpfriends_puller.start_listening)
 
-    if not args.no_webapi:
-        logger.info("Spawning web api.")
-        #start web api and inject mongo info
-        if 'loggly_token' in c:
-            loggly_token = c['loggly_token']
-        else:
-            loggly_token = None
-        webapi = mnemowebapi.MnemoWebAPI(c['mongo_db'], static_file_path=args.webpath, loggly_token=loggly_token)
-        greenlets['webapi'] = gevent.spawn(webapi.start_listening, c['webapi_host'], c['webapi_port'])
-
-
     if not args.no_normalizer:
-        #start menmo and inject persistence module
+        # start menmo and inject persistence module
         normalizer = Normalizer(db, ignore_rfc1918=c['normalizer_ignore_rfc1918'])
         logger.info("Spawning normalizer")
         greenlets['normalizer'] = gevent.spawn(normalizer.start_processing)
@@ -179,10 +162,6 @@ if __name__ == '__main__':
         if normalizer:
             logger.info('Stopping Normalizer')
             normalizer.stop()
-        if 'webapi' in greenlets:
-            greenlets['webapi'].kill(block=False)
 
-    #wait for greenlets to do a graceful stop
+    # wait for greenlets to do a graceful stop
     gevent.joinall(greenlets.values())
-
-

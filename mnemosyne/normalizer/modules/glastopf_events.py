@@ -18,9 +18,9 @@
 import json
 import re
 from datetime import datetime
-from urlparse import urlparse
-from BaseHTTPServer import BaseHTTPRequestHandler
-from StringIO import StringIO
+from urllib.parse import urlparse
+from http.server import BaseHTTPRequestHandler
+from io import StringIO
 
 from normalizer.modules.basenormalizer import BaseNormalizer
 
@@ -29,7 +29,7 @@ class GlastopfEvents(BaseNormalizer):
     channels = ('glastopf.events',)
 
     def __init__(self):
-        #dorks to be filtered out
+        # dorks to be filtered out
         self.dork_filter = '/headers|favicon.ico|w00tw00t|/robots.txt'
 
     def normalize(self, data, channel, submission_timestamp, ignore_rfc1918=True):
@@ -40,7 +40,7 @@ class GlastopfEvents(BaseNormalizer):
 
         relations = {}
 
-        #only old versions of glastopf has the request key
+        # only old versions of glastopf has the request key
         relations['session'] = self.make_session(o_data)
         relations['session']['session_http'] = self.make_session_http(o_data)
         dork = self.make_dork(o_data, submission_timestamp)
@@ -50,7 +50,7 @@ class GlastopfEvents(BaseNormalizer):
         return [relations]
 
     def make_dork(self, data, timestamp):
-        #only old versions of glastopf has the request key
+        # only old versions of glastopf has the request key
         if 'request' in data:
             dork = urlparse(self.make_url(data)).path
         else:
@@ -67,7 +67,7 @@ class GlastopfEvents(BaseNormalizer):
             data['time'], '%Y-%m-%d %H:%M:%S')
         session['source_ip'] = data['source'][0]
         session['source_port'] = data['source'][1]
-        #TODO: Extract from header if specified
+        # TODO: Extract from header if specified
         session['destination_port'] = 80
         session['protocol'] = 'http'
         session['honeypot'] = 'glastopf'
@@ -77,7 +77,7 @@ class GlastopfEvents(BaseNormalizer):
     def make_session_http(self, data):
         session_http = {}
         request = {}
-        #glastopf's old logging format has the 'request' key
+        # glastopf's old logging format has the 'request' key
         if 'request' in data:
             request['header'] = json.dumps(data['request']['header'])
             if 'body' in data['request']:
@@ -87,12 +87,12 @@ class GlastopfEvents(BaseNormalizer):
             request['verb'] = data['request']['method']
 
             request['url'] = self.make_url(data)
-        #new glastopf logging format
+        # new glastopf logging format
         else:
             r = HTTPRequest(data['request_raw'])
             if 'host' in r.headers:
                 request['host'] = r.headers['host']
-            #dict json loads?
+            # dict json loads?
             request['header'] = r.headers.items()
             request['verb'] = r.command
             request['path'] = r.path
@@ -121,8 +121,8 @@ class GlastopfEvents(BaseNormalizer):
         return url
 
 
-#Thanks Brandon Rhodes!
-#http://stackoverflow.com/questions/4685217/parse-raw-http-headers
+# Thanks Brandon Rhodes!
+# http://stackoverflow.com/questions/4685217/parse-raw-http-headers
 class HTTPRequest(BaseHTTPRequestHandler):
     def __init__(self, request_text):
         self.rfile = StringIO(request_text)
