@@ -26,11 +26,6 @@ RUN pip3 install -r /opt/requirements.txt
 RUN pip3 install git+https://github.com/CommunityHoneyNetwork/hpfeeds3.git
 
 COPY . /opt/
+RUN chmod 0755 /opt/entrypoint.sh
 
-
-CMD python3 /opt/scripts/build_config.py --template "/opt/templates/mnemosyne.cfg.template" --config "/opt/mnemosyne.cfg" \
-        --owner ${OWNER} --ident ${IDENT} --secret "${SECRET}" --hpfeeds-host ${HPFEEDS_HOST} --hpfeeds-port ${HPFEEDS_PORT} \
-        --channels ${CHANNELS} --mongodb-host ${MONGODB_HOST} --mongodb-port ${MONGODB_PORT} \
-        --mongodb-ttl ${MONGODB_INDEXTTL} --rfc1918 ${IGNORE_RFC1918} \
-    && cd /opt/mnemosyne \
-    && /usr/bin/env python3 /opt/mnemosyne/runner.py --config /opt/mnemosyne.cfg
+ENTRYPOINT ["/opt/entrypoint.sh"]
