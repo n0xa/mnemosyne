@@ -1,10 +1,5 @@
 pymongo==2.8.1
-gevent==1.0.2
-bottle-mongodb==0.2.1
-bottle-cork==0.6
-git+https://github.com/defnull/bottle/
-Beaker==1.6.4
-WebTest==2.0.16
+gevent==1.2.2
 python-magic==0.4.6
 nose==1.3.4
 kumo==0.2
