@@ -1,6 +1,8 @@
-version: '2'
+version: '3'
 services:
-  ubuntu:
+  mnemosyne:
     build:
       context: .
-    image: mnemosyne:ubuntu
+    image: mnemosyne:latest
+    env_file:
+      - mnemosyne.env
