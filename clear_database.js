@@ -14,7 +14,7 @@ function clear_collection(colname) {
     print('');
 }
 
-var db = connect('127.0.0.1:27017/mnemosyne');
+var db = connect('mongodb:27017/mnemosyne');
 
 var collections = ["counts", "daily_stats", "dork", "file", "hpfeed", "metadata", "session", "url"];
 
