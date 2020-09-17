@@ -6,6 +6,5 @@ mnemosyne
 
 Find the documentation here: [https://communityhoneynetwork.readthedocs.io](https://communityhoneynetwork.readthedocs.io)
 
-| branch | build status |
-| ---    | ---          |
-| master | [![master status](https://gitlab.oit.duke.edu/stingar/mnemosyne/badges/master/pipeline.svg)](https://gitlab.oit.duke.edu/stingar/mnemosyne/commits/master)|
+
+![CI](https://github.com/CommunityHoneyNetwork/mnemosyne/workflows/CI/badge.svg)
