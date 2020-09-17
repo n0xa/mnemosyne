@@ -10,6 +10,7 @@ LABEL authoritative-source-url "https://github.com/CommunityHoneyNetwork/mnemosy
 LABEL changelog-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
 
 ENV DEBIAN_FRONTEND "noninteractive"
+# hadolint ignore=DL3008,DL3005
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y gcc git sqlite mongodb python3-dev python3-pip
 
