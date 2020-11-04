@@ -41,6 +41,7 @@ from normalizer.modules import uhp_events
 from normalizer.modules import elasticpot_events
 from normalizer.modules import spylex_events
 from normalizer.modules import big_hp_events
+from normalizer.modules import ssh_auth_logger_events
 
 from bson import ObjectId
 
