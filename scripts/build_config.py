@@ -16,7 +16,7 @@ def main():
     SECRET = os.environ.get("SECRET", "")
     HPFEEDS_HOST = os.environ.get("HPFEEDS_HOST", "hpfeeds3")
     HPFEEDS_PORT = os.environ.get("HPFEEDS_PORT", "10000")
-    CHANNELS = os.environ.get("CHANNELS", "amun.events,conpot.events,thug.events,beeswarm.hive,dionaea.capture,dionaea.connections,thug.files,beeswarm.feeder,cuckoo.analysis,kippo.sessions,cowrie.sessions,glastopf.events,glastopf.files,mwbinary.dionaea.sensorunique,snort.alerts,wordpot.events,p0f.events,suricata.events,shockpot.events,elastichoney.events,rdphoney.sessions,uhp.events,elasticpot.events,spylex.events,big-hp.events")
+    CHANNELS = os.environ.get("CHANNELS", "amun.events,conpot.events,thug.events,beeswarm.hive,dionaea.capture,dionaea.connections,thug.files,beeswarm.feeder,cuckoo.analysis,kippo.sessions,cowrie.sessions,glastopf.events,glastopf.files,mwbinary.dionaea.sensorunique,snort.alerts,wordpot.events,p0f.events,suricata.events,shockpot.events,elastichoney.events,rdphoney.sessions,uhp.events,elasticpot.events,spylex.events,big-hp.events,ssh-auth-logger.events")
     MONGODB_HOST = os.environ.get("MONGODB_HOST", "mongodb")
     MONGODB_PORT = os.environ.get("MONGODB_PORT", "27017")
     MONGODB_TTL = os.environ.get("MONGODB_TTL", "2592000")
