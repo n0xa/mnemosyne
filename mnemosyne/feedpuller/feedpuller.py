@@ -17,9 +17,7 @@
 
 from datetime import datetime
 import logging
-
 import gevent
-
 import hpfeeds
 
 logger = logging.getLogger('__main__')
@@ -58,21 +56,21 @@ class FeedPuller(object):
                 self.hpc.run(on_message, on_error)
             except Exception as ex:
                 print(ex)
-                self.hpc.stop()
                 logger.exception('Exception caught: {0}'.format(ex))
+                self.hpc.stop()
             # throttle
             gevent.sleep(5)
 
     def stop(self):
+        logger.info("FeedPuller stopped.")
         self.hpc.stop()
         self.enabled = False
-        logger.info("FeedPuller stopped.")
 
     def _activity_checker(self):
         while self.enabled:
             if self.hpc is not None and self.hpc.connected:
                 difference = datetime.now() - self.last_received
                 if difference.seconds > 120:
-                    logger.warning('No activity for 15 seconds, forcing reconnect')
+                    logger.warning('No activity for 120 seconds, forcing reconnect')
                     self.hpc.stop()
             gevent.sleep(120)

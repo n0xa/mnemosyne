@@ -141,28 +141,29 @@ if __name__ == '__main__':
         normalizer = Normalizer(db, ignore_rfc1918=c['normalizer_ignore_rfc1918'])
         logger.info("Spawning normalizer")
         greenlets['normalizer'] = gevent.spawn(normalizer.start_processing)
+    while True:
+        try:
 
-    try:
+            if args.stats:
+                while True:
+                    counts = db.collection_count()
+                    log_string = 'Mongo collection count:'
+                    for key, value in counts.items():
+                        if key == 'hpfeed':
+                            value = '{0} ({1} in error state)'.format(value, db.get_hpfeed_error_count())
+                        log_string += ' {0}: {1}, '.format(key, value)
+                    logging.info(log_string)
+                    gevent.sleep(1800)
 
-        if args.stats:
-            while True:
-                counts = db.collection_count()
-                log_string = 'Mongo collection count:'
-                for key, value in counts.items():
-                    if key == 'hpfeed':
-                        value = '{0} ({1} in error state)'.format(value, db.get_hpfeed_error_count())
-                    log_string += ' {0}: {1}, '.format(key, value)
-                logging.info(log_string)
-                gevent.sleep(1800)
-
-        gevent.joinall(greenlets.values())
-    except KeyboardInterrupt as err:
-        if hpfriends_puller:
-            logger.info('Stopping HPFriends puller')
-            hpfriends_puller.stop()
-        if normalizer:
-            logger.info('Stopping Normalizer')
-            normalizer.stop()
+            gevent.joinall(greenlets.values())
+        except KeyboardInterrupt as err:
+            if hpfriends_puller:
+                logger.info('Stopping HPFriends puller')
+                hpfriends_puller.stop()
+            if normalizer:
+                logger.info('Stopping Normalizer')
+                normalizer.stop()
+            break
 
     # wait for greenlets to do a graceful stop
     gevent.joinall(greenlets.values())
