@@ -1,5 +1,4 @@
 from normalizer.modules.basenormalizer import BaseNormalizer
-import logging
 
 
 class BigHpEvents(BaseNormalizer):
