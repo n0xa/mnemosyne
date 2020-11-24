@@ -54,7 +54,7 @@ import traceback
 
 from xml.etree.ElementTree import ParseError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 
 class Normalizer(object):

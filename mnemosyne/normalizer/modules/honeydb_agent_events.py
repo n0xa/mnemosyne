@@ -1,13 +1,8 @@
 from normalizer.modules.basenormalizer import BaseNormalizer
 import logging
 
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s][%(filename)s] - %(message)s'
+logger = logging.getLogger('__main__')
 
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter(LOG_FORMAT))
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)
 
 class HoneydbAgentEvents(BaseNormalizer):
     channels = ('honeydb-agent.events',)
