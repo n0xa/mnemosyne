@@ -77,8 +77,9 @@ def parse_config(config_file):
 
 def do_logging(file_log=None, loggly_token=None):
     logger.setLevel(logging.DEBUG)
+    LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s][%(filename)s] - %(message)s'
 
-    formatter = logging.Formatter('%(asctime)-15s (%(name)s) %(message)s')
+    formatter = logging.Formatter(LOG_FORMAT)
 
     if file_log:
         file_log = logging.FileHandler(file_log)
