@@ -22,7 +22,7 @@ import gevent
 
 import hpfeeds
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 
 class FeedPuller(object):

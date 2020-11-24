@@ -28,7 +28,7 @@ from persistance.preagg_reports import ReportGenerator
 from gevent import Greenlet
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 
 class MnemoDB(object):
@@ -67,12 +67,12 @@ class MnemoDB(object):
     def set_coll_indexttl(self, coll, indexttl):
         """Sets the Index TTL (expireAfterSeconds property) on the timestamp field
         of a collection.
-        Inputs: 
+        Inputs:
             coll (str): collection name
             indexttl (int): number, in seconds, of how long after timestamp field value
                 before Mongo TTL worker removes the expired document
         Outputs: none
-        """ 
+        """
         coll_info_timestamp = self.db[coll].index_information().get('timestamp_1')
         if coll_info_timestamp:
             coll_info_ttlsecs = coll_info_timestamp.get('expireAfterSeconds')
@@ -82,7 +82,7 @@ class MnemoDB(object):
         if not coll_info_ttlsecs and indexttl:
             if coll_info_timestamp:
                 self.db[coll].drop_index('timestamp_1')
-            self.db[coll].ensure_index('timestamp', unique=False, 
+            self.db[coll].ensure_index('timestamp', unique=False,
                                        background=True, expireAfterSeconds=indexttl)
         # if expireAfterSeconds IS set but indexttl == False (indicating it no longer should be)
         elif coll_info_ttlsecs and not indexttl:
@@ -90,14 +90,14 @@ class MnemoDB(object):
             self.db[coll].ensure_index('timestamp', unique=False, background=True)
         # if a user has changed the expireTTL value since last set
         elif coll_info_ttlsecs and indexttl and indexttl != coll_info_ttlsecs:
-            self.db.command('collMod', coll, 
+            self.db.command('collMod', coll,
                             index={'keyPattern': {'timestamp': 1},
                                    'background': True,
                                    'expireAfterSeconds': indexttl
                                    })
         # self.db.session.ensure_index('timestamp', unique=False, background=True)
         # self.db.hpfeed.ensure_index('timestamp', unique=False, background=True)
-    
+
     def compact_database(self):
         # runs 'compact' on each collection in mongodb to free any available space back to OS
         # warning: 'compact' _IS_ a blocking operation
@@ -138,7 +138,7 @@ class MnemoDB(object):
                 elif collection is 'metadata':
                     if 'ip' in document and 'honeypot' in document:
                         query = {
-                            'ip': document['ip'], 
+                            'ip': document['ip'],
                             'honeypot': document['honeypot']
                         }
                         values = dict((k, v) for k, v in document.items() if k not in ['ip', 'honeypot'])

@@ -64,7 +64,6 @@ class Normalizer(object):
         self.database = database
         self.enabled = True
         self.ignore_rfc1918 = ignore_rfc1918
-
         # max number of concurrent mongodb inserters
         self.worker_pool = Pool(5)
 
@@ -117,6 +116,7 @@ class Normalizer(object):
                 self.database.hpfeed_set_errors(error_list)
 
             if len(to_be_inserted):
+                logger.debug('Inserting {} items'.format(len(to_be_inserted)))
                 self.worker_pool.spawn(self.inserter, to_be_inserted)
 
             if normalizations is 0:

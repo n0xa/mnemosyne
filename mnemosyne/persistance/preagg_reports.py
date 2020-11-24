@@ -19,7 +19,7 @@ from datetime import datetime
 
 from pymongo import MongoClient
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 
 class ReportGenerator:
