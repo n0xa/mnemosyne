@@ -1,13 +1,13 @@
 FROM ubuntu:18.04
 
-LABEL maintainer Team STINGAR <team-stingar@duke.edu>
-LABEL name "mnemosyne"
-LABEL version "1.9"
-LABEL release "1"
-LABEL summary "Community Honey Network mnemosyne server"
-LABEL description "mnemosyne is a normalizer for honeypot data and writes to mongodb"
-LABEL authoritative-source-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
-LABEL changelog-url "https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
+LABEL maintainer="Team Stingar <team-stingar@duke.edu>"
+LABEL name="mnemosyne"
+LABEL version="1.9.1"
+LABEL release="1"
+LABEL summary="Community Honey Network mnemosyne server"
+LABEL description="mnemosyne is a normalizer for honeypot data and writes to mongodb"
+LABEL authoritative-source-url="https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
+LABEL changelog-url="https://github.com/CommunityHoneyNetwork/mnemosyne/commits/master"
 
 ENV DEBIAN_FRONTEND "noninteractive"
 
