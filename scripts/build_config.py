@@ -2,7 +2,7 @@ import os
 import uuid
 import argparse
 import configparser
-from hpfeeds.add_user import create_user
+from chnutils.hpfeeds_user import create_user
 
 
 def main():
@@ -22,7 +22,8 @@ def main():
                                           "mwbinary.dionaea.sensorunique,snort.alerts,wordpot.events,p0f.events,"
                                           "suricata.events,shockpot.events,elastichoney.events,rdphoney.sessions,"
                                           "uhp.events,elasticpot.events,spylex.events,big-hp.events,"
-                                          "ssh-auth-logger.events,honeydb-agent.events")
+                                          "ssh-auth-logger.events,honeydb-agent.events,"
+                                          "sticky_elephant.connections,sticky_elephant.queries")
     MONGODB_HOST = os.environ.get("MONGODB_HOST", "mongodb")
     MONGODB_PORT = os.environ.get("MONGODB_PORT", "27017")
     MONGODB_TTL = os.environ.get("MONGODB_TTL", "2592000")
