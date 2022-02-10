@@ -41,7 +41,7 @@ class FeedPuller(object):
         gevent.spawn_later(15, self._activity_checker)
         while self.enabled:
             try:
-                self.hpc = hpfeeds.client.new(self.host, self.port, self.ident, self.secret)
+                self.hpc = hpfeeds.new(self.host, self.port, self.ident, self.secret)
 
                 def on_error(payload):
                     logger.error('Error message from broker: {0}'.format(payload))

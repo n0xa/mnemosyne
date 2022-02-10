@@ -21,6 +21,7 @@ import time
 import json
 from datetime import datetime
 
+import pymongo
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.errors import InvalidStringData
@@ -34,35 +35,36 @@ logger = logging.getLogger('__main__')
 class MnemoDB(object):
     def __init__(self, host, port, database_name, indexttl=False):
         logger.info('Connecting to mongodb, using "{0}" as database.'.format(database_name))
-        conn = MongoClient(host=host, port=port, auto_start_request=False)
+        conn = MongoClient(host=host, port=port)
         self.rg = ReportGenerator(host=host, port=port, database_name=database_name)
         self.db = conn[database_name]
+        self.indexttl = indexttl
         self.ensure_index(indexttl)
         self.compact_database()
 
     def ensure_index(self, indexttl):
-        self.db.hpfeed.ensure_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
-        self.db.url.ensure_index('url', unique=True, background=True)
-        self.db.url.ensure_index('extractions.hashes.md5', unique=False, background=True)
-        self.db.url.ensure_index('extractions.hashes.sha1', unique=False, background=True)
-        self.db.url.ensure_index('extractions.hashes.sha512', unique=False, background=True)
-        self.db.file.ensure_index('hashes', unique=True, background=True)
-        self.db.dork.ensure_index('content', unique=False, background=True)
-        self.db.session.ensure_index('protocol', unique=False, background=True)
-        self.db.session.ensure_index('source_ip', unique=False, background=True)
-        self.db.session.ensure_index('source_port', unique=False, background=True)
-        self.db.session.ensure_index('destination_port', unique=False, background=True)
-        self.db.session.ensure_index('destination_ip', unique=False, background=True)
-        self.db.session.ensure_index('source_port', unique=False, background=True)
-        self.db.session.ensure_index('honeypot', unique=False, background=True)
+        self.db.hpfeed.create_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
+        self.db.url.create_index('url', unique=True, background=True)
+        self.db.url.create_index('extractions.hashes.md5', unique=False, background=True)
+        self.db.url.create_index('extractions.hashes.sha1', unique=False, background=True)
+        self.db.url.create_index('extractions.hashes.sha512', unique=False, background=True)
+        self.db.file.create_index('hashes', unique=True, background=True)
+        self.db.dork.create_index('content', unique=False, background=True)
+        self.db.session.create_index('protocol', unique=False, background=True)
+        self.db.session.create_index('source_ip', unique=False, background=True)
+        self.db.session.create_index('source_port', unique=False, background=True)
+        self.db.session.create_index('destination_port', unique=False, background=True)
+        self.db.session.create_index('destination_ip', unique=False, background=True)
+        self.db.session.create_index('source_port', unique=False, background=True)
+        self.db.session.create_index('honeypot', unique=False, background=True)
         self.set_coll_indexttl('session', indexttl)
         self.set_coll_indexttl('hpfeed', indexttl)
-        self.db.session.ensure_index('identifier', unique=False, background=True)
-        self.db.daily_stats.ensure_index([('channel', 1), ('date', 1)])
-        self.db.counts.ensure_index([('identifier', 1), ('date', 1)])
-        self.db.counts.ensure_index('identifier', unique=False, background=True)
-        self.db.metadata.ensure_index([('ip', 1), ('honeypot', 1)])
-        self.db.metadata.ensure_index('ip', unique=False, background=True)
+        self.db.session.create_index('identifier', unique=False, background=True)
+        self.db.daily_stats.create_index([('channel', 1), ('date', 1)])
+        self.db.counts.create_index([('identifier', 1), ('date', 1)])
+        self.db.counts.create_index('identifier', unique=False, background=True)
+        self.db.metadata.create_index([('ip', 1), ('honeypot', 1)])
+        self.db.metadata.create_index('ip', unique=False, background=True)
 
     def set_coll_indexttl(self, coll, indexttl):
         """Sets the Index TTL (expireAfterSeconds property) on the timestamp field
@@ -82,12 +84,12 @@ class MnemoDB(object):
         if not coll_info_ttlsecs and indexttl:
             if coll_info_timestamp:
                 self.db[coll].drop_index('timestamp_1')
-            self.db[coll].ensure_index('timestamp', unique=False,
+            self.db[coll].create_index('timestamp', unique=False,
                                        background=True, expireAfterSeconds=indexttl)
         # if expireAfterSeconds IS set but indexttl == False (indicating it no longer should be)
         elif coll_info_ttlsecs and not indexttl:
             self.db[coll].drop_index('timestamp_1')
-            self.db[coll].ensure_index('timestamp', unique=False, background=True)
+            self.db[coll].create_index('timestamp', unique=False, background=True)
         # if a user has changed the expireTTL value since last set
         elif coll_info_ttlsecs and indexttl and indexttl != coll_info_ttlsecs:
             self.db.command('collMod', coll,
@@ -101,7 +103,7 @@ class MnemoDB(object):
     def compact_database(self):
         # runs 'compact' on each collection in mongodb to free any available space back to OS
         # warning: 'compact' _IS_ a blocking operation
-        collections = self.db.collection_names()
+        collections = self.db.list_collection_names()
         for collection in collections:
             logger.info('Compacting collection %s', collection)
             self.db.command('compact', collection, force=True)
@@ -114,27 +116,27 @@ class MnemoDB(object):
             for collection, document in item.items():
                 if collection is 'url':
                     if 'extractions' in document:
-                        self.db[collection].update({'url': document['url']},
-                                                   {'$pushAll': {'extractions': document['extractions']},
-                                                    '$push': {'hpfeeds_ids': hpfeed_id}},
-                                                   upsert=True)
+                        self.db[collection].update_one({'url': document['url']},
+                                                       {'$pushAll': {'extractions': document['extractions']},
+                                                        '$push': {'hpfeeds_ids': hpfeed_id}},
+                                                       upsert=True)
                     else:
-                        self.db[collection].update({'url': document['url']}, {'$push': {'hpfeeds_ids': hpfeed_id}},
-                                                   upsert=True)
+                        self.db[collection].update_one({'url': document['url']}, {'$push': {'hpfeeds_ids': hpfeed_id}},
+                                                       upsert=True)
                 elif collection is 'file':
-                    self.db[collection].update({'hashes.sha512': document['hashes']['sha512']},
-                                               {'$set': document, '$push': {'hpfeed_ids': hpfeed_id}},
-                                               upsert=True)
+                    self.db[collection].update_one({'hashes.sha512': document['hashes']['sha512']},
+                                                   {'$set': document, '$push': {'hpfeed_ids': hpfeed_id}},
+                                                   upsert=True)
                 elif collection is 'session':
                     document['hpfeed_id'] = hpfeed_id
                     if identifier:
                         document['identifier'] = identifier
-                    self.db[collection].insert(document)
+                    self.db[collection].insert_one(document)
                 elif collection is 'dork':
-                    self.db[collection].update({'content': document['content'], 'type': document['type']},
-                                               {'$set': {'lasttime': document['timestamp']},
-                                                '$inc': {'count': document['count']}},
-                                               upsert=True)
+                    self.db[collection].update_one({'content': document['content'], 'type': document['type']},
+                                                   {'$set': {'lasttime': document['timestamp']},
+                                                    '$inc': {'count': document['count']}},
+                                                   upsert=True)
                 elif collection is 'metadata':
                     if 'ip' in document and 'honeypot' in document:
                         query = {
@@ -142,12 +144,12 @@ class MnemoDB(object):
                             'honeypot': document['honeypot']
                         }
                         values = dict((k, v) for k, v in document.items() if k not in ['ip', 'honeypot'])
-                        self.db[collection].update(query, {'$set': values}, upsert=True)
+                        self.db[collection].update_one(query, {'$set': values}, upsert=True)
                 else:
                     raise Warning('{0} is not a know collection type.'.format(collection))
                     # if we end up here everything if ok - setting hpfeed entry to normalized
-        self.db.hpfeed.update({'_id': hpfeed_id}, {'$set': {'normalized': True},
-                                                   '$unset': {'last_error': 1, 'last_error_timestamp': 1}})
+        self.db.hpfeed.update_one({'_id': hpfeed_id}, {'$set': {'normalized': True},
+                                  '$unset': {'last_error': 1, 'last_error_timestamp': 1}})
 
     def insert_hpfeed(self, ident, channel, payload):
         # thanks rep!
@@ -170,18 +172,18 @@ class MnemoDB(object):
                  'timestamp': timestamp,
                  'normalized': False}
         try:
-            self.db.hpfeed.insert(entry)
+            self.db.hpfeed.insert_one(entry)
         except InvalidStringData as err:
             logger.error(
                 'Failed to insert hpfeed data on {0} channel due to invalid string data. ({1})'.format(
                     entry['channel'], err))
 
-        self.db.counts.update(
+        self.db.counts.update_one(
             {'identifier': ident, 'date': timestamp.strftime('%Y%m%d')},
             {"$inc": {"event_count": 1}},
             upsert=True
         )
-        self.db.counts.update(
+        self.db.counts.update_one(
             {'identifier': channel, 'date': timestamp.strftime('%Y%m%d')},
             {"$inc": {"event_count": 1}},
             upsert=True
@@ -194,23 +196,24 @@ class MnemoDB(object):
         :param items: a list of hpfeed entries.
         """
         for item in items:
-            self.db.hpfeed.update({'_id': item['_id']},
-                                  {'$set':
-                                   {'last_error': str(item['last_error']),
-                                    'last_error_timestamp': item['last_error_timestamp']}
-                                   })
+            self.db.hpfeed.update_one({'_id': item['_id']},
+                                      {'$set':
+                                       {'last_error': str(item['last_error']),
+                                        'last_error_timestamp': item['last_error_timestamp']}
+                                       })
 
-    def get_hpfeed_data(self, get_before_id, max=250, max_scan=10000):
+    def get_hpfeed_data(self, get_before_id, limit=250, max_time_ms=10000):
         """Fetches unnormalized hpfeed items from the datastore.
 
-        :param max: maximum number of entries to return
+        :param limit: maximum number of entries to return
+        :param max_time_ms: Maximum time to query before returning results
         :param get_before_id: only return entries which are below the value of this ObjectId
         :return: a list of dictionaries
         """
 
         data = list(self.db.hpfeed.find({'_id': {'$lt': get_before_id}, 'normalized': False,
-                                         'last_error': {'$exists': False}}, limit=max,
-                                        sort=[('_id', -1)], max_scan=max_scan))
+                                         'last_error': {'$exists': False}}, limit=limit,
+                                        sort=[('_id', pymongo.DESCENDING)], max_time_ms=max_time_ms))
         return data
 
     def reset_normalized(self):
@@ -218,7 +221,7 @@ class MnemoDB(object):
 
         logger.info('Initiating database reset - all normalized data will be deleted. (Starting timer)')
         start = time.time()
-        for collection in self.db.collection_names():
+        for collection in self.db.list_collection_names():
             if collection not in ['system.indexes', 'hpfeed', 'hpfeeds']:
                 logger.warning('Dropping collection: {0}.'.format(collection))
                 self.db.drop_collection(collection)
@@ -227,11 +230,11 @@ class MnemoDB(object):
         self.db.hpfeed.drop_indexes()
         logger.info('Indexes dropped(Elapse: {0}).'.format(time.time() - start))
         logger.info('Resetting normalization flags from hpfeeds collection.')
-        self.db.hpfeed.update({}, {"$set": {'normalized': False},
-                                   '$unset': {'last_error': 1, 'last_error_timestamp': 1}}, multi=True)
+        self.db.hpfeed.update_one({}, {"$set": {'normalized': False},
+                                       '$unset': {'last_error': 1, 'last_error_timestamp': 1}}, multi=True)
         logger.info('Done normalization flags from hpfeeds collection.(Elapse: {0}).'.format(time.time() - start))
         logger.info('Recreating indexes.')
-        self.ensure_index()
+        self.ensure_index(self.indexttl)
         logger.info('Done recreating indexes (Elapse: {0})'.format(time.time() - start))
 
         logger.info('Full reset done in {0} seconds'.format(time.time() - start))
@@ -241,7 +244,7 @@ class MnemoDB(object):
 
     def collection_count(self):
         result = {}
-        for collection in self.db.collection_names():
+        for collection in self.db.list_collection_names():
             if collection not in ['system.indexes']:
                 count = self.db[collection].count()
                 result[collection] = count

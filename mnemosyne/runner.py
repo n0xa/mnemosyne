@@ -15,11 +15,6 @@
 # Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import gevent
-import gevent.monkey
-
-gevent.monkey.patch_all()
-
 import os
 import argparse
 import logging
@@ -30,6 +25,8 @@ from normalizer.normalizer import Normalizer
 from persistance import mnemodb
 from feedpuller import feedpuller
 
+import gevent.monkey
+gevent.monkey.patch_all()
 
 logger = logging.getLogger()
 
@@ -42,12 +39,11 @@ def parse_config(config_file):
     cfg_parser.read(config_file)
 
     log_file = None
-    loggly_token = None
 
     if cfg_parser.getboolean('file_log', 'enabled'):
         log_file = cfg_parser.get('file_log', 'file')
 
-    do_logging(log_file, loggly_token)
+    do_logging(log_file)
 
     config = {}
 
@@ -75,11 +71,11 @@ def parse_config(config_file):
     return config
 
 
-def do_logging(file_log=None, loggly_token=None):
+def do_logging(file_log=None):
     logger.setLevel(logging.DEBUG)
-    LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s][%(filename)s] - %(message)s'
+    log_format = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s][%(filename)s] - %(message)s'
 
-    formatter = logging.Formatter(LOG_FORMAT)
+    formatter = logging.Formatter(log_format)
 
     if file_log:
         file_log = logging.FileHandler(file_log)
