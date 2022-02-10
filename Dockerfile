@@ -21,7 +21,8 @@ RUN apt-get update \
 COPY requirements.txt /opt/requirements.txt
 RUN python3 -m pip install --upgrade pip setuptools wheel \
   && python3 -m pip install -r /opt/requirements.txt \
-  && python3 -m pip install git+https://github.com/CommunityHoneyNetwork/hpfeeds3.git
+  && python3 -m pip install git+https://github.com/hpfeeds/hpfeeds.git \
+  && python3 -m pip install git+https://github.com/CommunityHoneyNetwork/chnutils.git@1.10-dev
 
 COPY . /opt/
 RUN chmod 0755 /opt/entrypoint.sh

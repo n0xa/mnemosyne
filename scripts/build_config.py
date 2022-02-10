@@ -2,7 +2,7 @@ import os
 import uuid
 import argparse
 import configparser
-from hpfeeds.add_user import create_user
+from chnutils.hpfeeds_user import create_user
 
 
 def main():
