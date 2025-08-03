@@ -18,7 +18,7 @@
 from datetime import datetime
 import logging
 import gevent
-import hpfeeds
+from hpfeeds.blocking import ClientSession as HpfeedsConnection
 
 logger = logging.getLogger('__main__')
 
@@ -41,29 +41,39 @@ class FeedPuller(object):
         gevent.spawn_later(15, self._activity_checker)
         while self.enabled:
             try:
-                self.hpc = hpfeeds.client.new(self.host, self.port, self.ident, self.secret)
-
-                def on_error(payload):
-                    logger.error('Error message from broker: {0}'.format(payload))
-                    self.hpc.stop()
-
-                def on_message(ident, chan, payload):
+                self.hpc = HpfeedsConnection(self.host, self.port, self.ident, self.secret)
+                
+                # Subscribe to feeds
+                for feed in self.feeds:
+                    self.hpc.subscribe(feed)
+                
+                # Process messages
+                for ident, chan, payload in self.hpc:
                     self.last_received = datetime.now()
                     if not any(x in chan for x in (';', '"', '{', '}')):
-                        self.database.insert_hpfeed(ident, chan, payload.decode("utf-8"))
-
-                self.hpc.subscribe(self.feeds)
-                self.hpc.run(on_message, on_error)
+                        try:
+                            # Handle both string and bytes payload
+                            if isinstance(payload, bytes):
+                                payload_str = payload.decode("utf-8")
+                            else:
+                                payload_str = payload
+                            self.database.insert_hpfeed(ident, chan, payload_str)
+                        except UnicodeDecodeError:
+                            logger.warning(f"Failed to decode payload from {ident}:{chan}")
+                            
             except Exception as ex:
                 print(ex)
                 logger.exception('Exception caught: {0}'.format(ex))
-                self.hpc.stop()
+                if self.hpc:
+                    self.hpc.close()
             # throttle
             gevent.sleep(5)
 
     def stop(self):
         logger.info("FeedPuller stopped.")
-        self.hpc.stop()
+        self.enabled = False
+        if self.hpc:
+            self.hpc.close()
         self.enabled = False
 
     def _activity_checker(self):
