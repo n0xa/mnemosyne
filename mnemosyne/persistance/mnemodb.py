@@ -37,10 +37,10 @@ class MnemoDB(object):
         conn = MongoClient(host=host, port=port)
         self.rg = ReportGenerator(host=host, port=port, database_name=database_name)
         self.db = conn[database_name]
-        self.ensure_index(indexttl)
+        self.create_index(indexttl)
         self.compact_database()
 
-    def ensure_index(self, indexttl):
+    def create_index(self, indexttl):
         self.db.hpfeed.create_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
         self.db.url.create_index('url', unique=True, background=True)
         self.db.url.create_index('extractions.hashes.md5', unique=False, background=True)
@@ -82,12 +82,12 @@ class MnemoDB(object):
         if not coll_info_ttlsecs and indexttl:
             if coll_info_timestamp:
                 self.db[coll].drop_index('timestamp_1')
-            self.db[coll].ensure_index('timestamp', unique=False,
+            self.db[coll].create_index('timestamp', unique=False,
                                        background=True, expireAfterSeconds=indexttl)
         # if expireAfterSeconds IS set but indexttl == False (indicating it no longer should be)
         elif coll_info_ttlsecs and not indexttl:
             self.db[coll].drop_index('timestamp_1')
-            self.db[coll].ensure_index('timestamp', unique=False, background=True)
+            self.db[coll].create_index('timestamp', unique=False, background=True)
         # if a user has changed the expireTTL value since last set
         elif coll_info_ttlsecs and indexttl and indexttl != coll_info_ttlsecs:
             self.db.command('collMod', coll,
@@ -95,13 +95,13 @@ class MnemoDB(object):
                                    'background': True,
                                    'expireAfterSeconds': indexttl
                                    })
-        # self.db.session.ensure_index('timestamp', unique=False, background=True)
-        # self.db.hpfeed.ensure_index('timestamp', unique=False, background=True)
+        # self.db.session.create_index('timestamp', unique=False, background=True)
+        # self.db.hpfeed.create_index('timestamp', unique=False, background=True)
 
     def compact_database(self):
         # runs 'compact' on each collection in mongodb to free any available space back to OS
         # warning: 'compact' _IS_ a blocking operation
-        collections = self.db.collection_names()
+        collections = self.db.list_collection_names()
         for collection in collections:
             logger.info('Compacting collection %s', collection)
             self.db.command('compact', collection, force=True)
@@ -200,7 +200,7 @@ class MnemoDB(object):
                                     'last_error_timestamp': item['last_error_timestamp']}
                                    })
 
-    def get_hpfeed_data(self, get_before_id, max=250, max_scan=10000):
+    def get_hpfeed_data(self, get_before_id, max=250):
         """Fetches unnormalized hpfeed items from the datastore.
 
         :param max: maximum number of entries to return
@@ -210,7 +210,7 @@ class MnemoDB(object):
 
         data = list(self.db.hpfeed.find({'_id': {'$lt': get_before_id}, 'normalized': False,
                                          'last_error': {'$exists': False}}, limit=max,
-                                        sort=[('_id', -1)], max_scan=max_scan))
+                                        sort=[('_id', -1)]))
         return data
 
     def reset_normalized(self):
@@ -218,7 +218,7 @@ class MnemoDB(object):
 
         logger.info('Initiating database reset - all normalized data will be deleted. (Starting timer)')
         start = time.time()
-        for collection in self.db.collection_names():
+        for collection in self.db.list_collection_names():
             if collection not in ['system.indexes', 'hpfeed', 'hpfeeds']:
                 logger.warning('Dropping collection: {0}.'.format(collection))
                 self.db.drop_collection(collection)
@@ -231,7 +231,7 @@ class MnemoDB(object):
                                    '$unset': {'last_error': 1, 'last_error_timestamp': 1}}, multi=True)
         logger.info('Done normalization flags from hpfeeds collection.(Elapse: {0}).'.format(time.time() - start))
         logger.info('Recreating indexes.')
-        self.ensure_index()
+        self.create_index()
         logger.info('Done recreating indexes (Elapse: {0})'.format(time.time() - start))
 
         logger.info('Full reset done in {0} seconds'.format(time.time() - start))
@@ -241,7 +241,7 @@ class MnemoDB(object):
 
     def collection_count(self):
         result = {}
-        for collection in self.db.collection_names():
+        for collection in self.db.list_collection_names():
             if collection not in ['system.indexes']:
                 count = self.db[collection].count()
                 result[collection] = count

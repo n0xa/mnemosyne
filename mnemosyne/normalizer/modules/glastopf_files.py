@@ -17,7 +17,12 @@
 
 import base64
 
-import magic
+try:
+    import magic
+    HAS_MAGIC = True
+except ImportError:
+    HAS_MAGIC = False
+    print("Warning: python-magic not available, file type detection disabled")
 
 from normalizer.modules.basenormalizer import BaseNormalizer
 
@@ -32,7 +37,7 @@ class GlastopfFiles(BaseNormalizer):
 
         file_ = {
             'encoding': 'hex',
-            'content_guess': magic.from_buffer(decoded),
+            'content_guess': magic.from_buffer(decoded) if HAS_MAGIC else 'unknown',
             'data': decoded.encode('hex'),
             'hashes': hashes
         }
