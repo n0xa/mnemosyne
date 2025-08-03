@@ -1,0 +1,37 @@
+# Mnemosyne Configuration for CHN Stack
+# Copy to mnemosyne.cfg and customize
+
+[mongodb]
+host = localhost
+port = 27017
+database = mnemosyne
+
+[hpfeeds]
+host = localhost
+port = 10000
+# Update these credentials to match your hpfeeds auth setup
+ident = mnemosyne
+secret = change_this_secret
+# Channels to monitor (matching CHN-Server config.py HONEYPOT_CHANNELS)
+channels = dionaea.capture,dionaea.connections,cowrie.sessions,kippo.sessions,conpot.events,glastopf.events,glastopf.files,thug.events,thug.files,snort.alerts
+
+[processor]
+enabled = true
+# Number of worker processes
+workers = 4
+
+[logging]
+level = INFO
+file = /opt/chnserver/mnemosyne/logs/mnemosyne.log
+console = false
+
+[normalizer]
+# Enable/disable specific normalizers
+enabled_modules = all
+# or specify: cowrie_events,dionaea_connections,etc
+
+[database]
+# Data retention (days, 0 = keep forever)
+retention_days = 30
+# Cleanup interval (hours)
+cleanup_interval = 24

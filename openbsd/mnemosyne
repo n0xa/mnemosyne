@@ -1,0 +1,62 @@
+#!/bin/ksh
+# /etc/rc.d/mnemosyne init file for launching mnemosyne as a service on OpenBSD
+
+daemon="/opt/chnserver/mnemosyne/mnemosyne_wrapper.sh"
+daemon_flags=""
+daemon_user="chn"
+daemon_timeout=30
+
+. /etc/rc.d/rc.subr
+
+pexp=".*python.*mnemosyne.*runner.*"
+rc_bg=YES
+rc_reload=NO
+
+rc_pre() {
+	# Check for MongoDB connectivity
+	if ! pgrep mongod > /dev/null; then
+		echo "MongoDB is not running. Please start mongod first:"
+		echo "  rcctl start mongod"
+		return 1
+	fi
+	
+	# Check for hpfeeds broker
+	if ! nc -z 127.0.0.1 10000; then
+		echo "hpfeeds broker is not running. Please start it first:"
+		echo "  rcctl start hpfeeds_broker"
+		return 1
+	fi
+	
+	# Check for virtual environment
+	if [ ! -f /opt/chnserver/mnemosyne/venv/bin/python ]; then
+		echo "mnemosyne virtual environment not found. Please install it first:"
+		echo "  cd /opt/chnserver/mnemosyne"
+		echo "  python3 -m venv venv"
+		echo "  source venv/bin/activate"
+		echo "  pip install -r requirements.txt"
+		return 1
+	fi
+	
+	# Check for configuration file
+	if [ ! -f /opt/chnserver/mnemosyne/mnemosyne.cfg ]; then
+		echo "Configuration file not found at /opt/chnserver/mnemosyne/mnemosyne.cfg"
+		echo "Please configure mnemosyne and restart"
+		return 1
+	fi
+	
+	# Ensure log directory exists
+	mkdir -p /opt/chnserver/mnemosyne/logs
+	chown chn:chn /opt/chnserver/mnemosyne/logs
+}
+
+rc_post() {
+	sleep 3
+	if pgrep -f "python.*mnemosyne.*runner" > /dev/null; then
+		echo "mnemosyne started successfully"
+	else
+		echo "Warning: mnemosyne may not have started properly"
+		echo "Check logs at /opt/chnserver/mnemosyne/logs/mnemosyne.log"
+	fi
+}
+
+rc_cmd $1
