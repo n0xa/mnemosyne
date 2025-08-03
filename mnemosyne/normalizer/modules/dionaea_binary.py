@@ -15,7 +15,12 @@
 # Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import magic
+try:
+    import magic
+    HAS_MAGIC = True
+except ImportError:
+    HAS_MAGIC = False
+
 from normalizer.modules.basenormalizer import BaseNormalizer
 
 
@@ -27,7 +32,7 @@ class DionaeaBinary(BaseNormalizer):
         hashes = super(DionaeaBinary, self).generate_checksum_list(decoded)
         file_ = {
             'encoding': 'hex',
-            'content_guess': magic.from_buffer(decoded),
+            'content_guess': magic.from_buffer(decoded) if HAS_MAGIC else 'unknown',
             'data': data,
             'hashes': hashes
         }
