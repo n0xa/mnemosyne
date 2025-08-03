@@ -34,35 +34,35 @@ logger = logging.getLogger('__main__')
 class MnemoDB(object):
     def __init__(self, host, port, database_name, indexttl=False):
         logger.info('Connecting to mongodb, using "{0}" as database.'.format(database_name))
-        conn = MongoClient(host=host, port=port, auto_start_request=False)
+        conn = MongoClient(host=host, port=port)
         self.rg = ReportGenerator(host=host, port=port, database_name=database_name)
         self.db = conn[database_name]
         self.ensure_index(indexttl)
         self.compact_database()
 
     def ensure_index(self, indexttl):
-        self.db.hpfeed.ensure_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
-        self.db.url.ensure_index('url', unique=True, background=True)
-        self.db.url.ensure_index('extractions.hashes.md5', unique=False, background=True)
-        self.db.url.ensure_index('extractions.hashes.sha1', unique=False, background=True)
-        self.db.url.ensure_index('extractions.hashes.sha512', unique=False, background=True)
-        self.db.file.ensure_index('hashes', unique=True, background=True)
-        self.db.dork.ensure_index('content', unique=False, background=True)
-        self.db.session.ensure_index('protocol', unique=False, background=True)
-        self.db.session.ensure_index('source_ip', unique=False, background=True)
-        self.db.session.ensure_index('source_port', unique=False, background=True)
-        self.db.session.ensure_index('destination_port', unique=False, background=True)
-        self.db.session.ensure_index('destination_ip', unique=False, background=True)
-        self.db.session.ensure_index('source_port', unique=False, background=True)
-        self.db.session.ensure_index('honeypot', unique=False, background=True)
+        self.db.hpfeed.create_index([('normalized', 1), ('last_error', 1)], unique=False, background=True)
+        self.db.url.create_index('url', unique=True, background=True)
+        self.db.url.create_index('extractions.hashes.md5', unique=False, background=True)
+        self.db.url.create_index('extractions.hashes.sha1', unique=False, background=True)
+        self.db.url.create_index('extractions.hashes.sha512', unique=False, background=True)
+        self.db.file.create_index('hashes', unique=True, background=True)
+        self.db.dork.create_index('content', unique=False, background=True)
+        self.db.session.create_index('protocol', unique=False, background=True)
+        self.db.session.create_index('source_ip', unique=False, background=True)
+        self.db.session.create_index('source_port', unique=False, background=True)
+        self.db.session.create_index('destination_port', unique=False, background=True)
+        self.db.session.create_index('destination_ip', unique=False, background=True)
+        self.db.session.create_index('source_port', unique=False, background=True)
+        self.db.session.create_index('honeypot', unique=False, background=True)
         self.set_coll_indexttl('session', indexttl)
         self.set_coll_indexttl('hpfeed', indexttl)
-        self.db.session.ensure_index('identifier', unique=False, background=True)
-        self.db.daily_stats.ensure_index([('channel', 1), ('date', 1)])
-        self.db.counts.ensure_index([('identifier', 1), ('date', 1)])
-        self.db.counts.ensure_index('identifier', unique=False, background=True)
-        self.db.metadata.ensure_index([('ip', 1), ('honeypot', 1)])
-        self.db.metadata.ensure_index('ip', unique=False, background=True)
+        self.db.session.create_index('identifier', unique=False, background=True)
+        self.db.daily_stats.create_index([('channel', 1), ('date', 1)])
+        self.db.counts.create_index([('identifier', 1), ('date', 1)])
+        self.db.counts.create_index('identifier', unique=False, background=True)
+        self.db.metadata.create_index([('ip', 1), ('honeypot', 1)])
+        self.db.metadata.create_index('ip', unique=False, background=True)
 
     def set_coll_indexttl(self, coll, indexttl):
         """Sets the Index TTL (expireAfterSeconds property) on the timestamp field
@@ -112,30 +112,30 @@ class MnemoDB(object):
         for item in ndata:
             # key = collection name, value = content
             for collection, document in item.items():
-                if collection is 'url':
+                if collection == 'url':
                     if 'extractions' in document:
-                        self.db[collection].update({'url': document['url']},
-                                                   {'$pushAll': {'extractions': document['extractions']},
-                                                    '$push': {'hpfeeds_ids': hpfeed_id}},
+                        self.db[collection].update_one({'url': document['url']},
+                                                   {'$push': {'extractions': {'$each': document['extractions']},
+                                                             'hpfeeds_ids': hpfeed_id}},
                                                    upsert=True)
                     else:
-                        self.db[collection].update({'url': document['url']}, {'$push': {'hpfeeds_ids': hpfeed_id}},
+                        self.db[collection].update_one({'url': document['url']}, {'$push': {'hpfeeds_ids': hpfeed_id}},
                                                    upsert=True)
-                elif collection is 'file':
-                    self.db[collection].update({'hashes.sha512': document['hashes']['sha512']},
+                elif collection == 'file':
+                    self.db[collection].update_one({'hashes.sha512': document['hashes']['sha512']},
                                                {'$set': document, '$push': {'hpfeed_ids': hpfeed_id}},
                                                upsert=True)
-                elif collection is 'session':
+                elif collection == 'session':
                     document['hpfeed_id'] = hpfeed_id
                     if identifier:
                         document['identifier'] = identifier
-                    self.db[collection].insert(document)
-                elif collection is 'dork':
-                    self.db[collection].update({'content': document['content'], 'type': document['type']},
+                    self.db[collection].insert_one(document)
+                elif collection == 'dork':
+                    self.db[collection].update_one({'content': document['content'], 'type': document['type']},
                                                {'$set': {'lasttime': document['timestamp']},
                                                 '$inc': {'count': document['count']}},
                                                upsert=True)
-                elif collection is 'metadata':
+                elif collection == 'metadata':
                     if 'ip' in document and 'honeypot' in document:
                         query = {
                             'ip': document['ip'],

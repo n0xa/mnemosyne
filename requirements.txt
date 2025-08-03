@@ -1,7 +1,10 @@
-pymongo==2.8.1
-gevent==1.2.2
-python-magic==0.4.6
-nose==1.3.4
-kumo==0.2
-Sphinx==1.2.3
-sphinxcontrib-httpdomain==1.3.0
+pymongo>=4.10.0
+gevent>=24.0.0
+python-magic>=0.4.27
+pytest>=8.0.0
+pytest-gevent>=1.1.0
+Sphinx>=7.0.0
+sphinxcontrib-httpdomain>=1.8.0
+setuptools>=70.0.0
+# Our modernized hpfeeds3 (will be installed locally)
+# hpfeeds3 (local install)

@@ -119,7 +119,7 @@ class Normalizer(object):
                 logger.debug('Inserting {} items'.format(len(to_be_inserted)))
                 self.worker_pool.spawn(self.inserter, to_be_inserted)
 
-            if normalizations is 0:
+            if normalizations == 0:
                 oldest_id = ObjectId("ffffffffffffffffffffffff")
                 gevent.sleep(3)
 
