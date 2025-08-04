@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-LABEL maintainer="Team Stingar <team-stingar@duke.edu>"
+LABEL maintainer="n0xa"
 LABEL name="mnemosyne"
 LABEL version="1.9.1"
 LABEL release="1"
@@ -22,14 +22,16 @@ RUN apt-get update \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY mnemosyne/requirements.txt /opt/requirements.txt
-# Copy local hpfeeds3 first for our PyMongo fixes
-COPY hpfeeds3 /tmp/hpfeeds3
+COPY requirements.txt /opt/requirements.txt
+# Install hpfeeds3 from PyPI since we need it for scripts
 RUN pip install --upgrade pip setuptools wheel \
   && pip install -r /opt/requirements.txt \
-  && pip install /tmp/hpfeeds3
+  && pip install hpfeeds3
 
-COPY mnemosyne /opt/
+COPY mnemosyne /opt/mnemosyne
+COPY scripts /opt/scripts
+COPY templates /opt/templates
+COPY entrypoint.sh /opt/
 RUN chmod 0755 /opt/entrypoint.sh
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
