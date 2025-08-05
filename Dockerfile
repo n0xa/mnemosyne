@@ -23,10 +23,10 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt /opt/requirements.txt
-# Install hpfeeds3 from PyPI since we need it for scripts
+# Install hpfeeds3 from GitHub to get add_user module
 RUN pip install --upgrade pip setuptools wheel \
   && pip install -r /opt/requirements.txt \
-  && pip install hpfeeds3
+  && pip install git+https://github.com/n0xa/hpfeeds3.git
 
 COPY mnemosyne /opt/mnemosyne
 COPY scripts /opt/scripts
