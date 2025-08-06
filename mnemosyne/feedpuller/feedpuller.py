@@ -43,29 +43,40 @@ class FeedPuller(object):
             try:
                 self.hpc = HpfeedsConnection(self.host, self.port, self.ident, self.secret)
                 
+                # Start the connection
+                self.hpc.start()
+                
                 # Subscribe to feeds
                 for feed in self.feeds:
                     self.hpc.subscribe(feed)
                 
                 # Process messages
-                for ident, chan, payload in self.hpc:
-                    self.last_received = datetime.now()
-                    if not any(x in chan for x in (';', '"', '{', '}')):
-                        try:
-                            # Handle both string and bytes payload
-                            if isinstance(payload, bytes):
-                                payload_str = payload.decode("utf-8")
-                            else:
-                                payload_str = payload
-                            self.database.insert_hpfeed(ident, chan, payload_str)
-                        except UnicodeDecodeError:
-                            logger.warning(f"Failed to decode payload from {ident}:{chan}")
+                while self.enabled:
+                    try:
+                        ident, chan, payload = self.hpc.read()
+                        self.last_received = datetime.now()
+                        if not any(x in chan for x in (';', '"', '{', '}')):
+                            try:
+                                # Handle both string and bytes payload
+                                if isinstance(payload, bytes):
+                                    payload_str = payload.decode("utf-8")
+                                else:
+                                    payload_str = payload
+                                self.database.insert_hpfeed(ident, chan, payload_str)
+                            except UnicodeDecodeError:
+                                logger.warning(f"Failed to decode payload from {ident}:{chan}")
+                    except:
+                        # Connection lost, break inner loop to reconnect
+                        break
                             
             except Exception as ex:
                 print(ex)
                 logger.exception('Exception caught: {0}'.format(ex))
                 if self.hpc:
-                    self.hpc.close()
+                    try:
+                        self.hpc.stop()
+                    except:
+                        pass
             # throttle
             gevent.sleep(5)
 
@@ -73,14 +84,17 @@ class FeedPuller(object):
         logger.info("FeedPuller stopped.")
         self.enabled = False
         if self.hpc:
-            self.hpc.close()
+            self.hpc.stop()
         self.enabled = False
 
     def _activity_checker(self):
         while self.enabled:
-            if self.hpc is not None and self.hpc.connected:
+            if self.hpc is not None:
                 difference = datetime.now() - self.last_received
                 if difference.seconds > 120:
                     logger.warning('No activity for 120 seconds, forcing reconnect')
-                    self.hpc.stop()
+                    try:
+                        self.hpc.stop()
+                    except:
+                        pass  # Connection might already be closed
             gevent.sleep(120)
