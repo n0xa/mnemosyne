@@ -17,8 +17,9 @@
 
 from datetime import datetime
 import logging
+import asyncio
 import gevent
-from hpfeeds.blocking import ClientSession as HpfeedsConnection
+from hpfeeds.asyncio import ClientSession as HpfeedsConnection
 
 logger = logging.getLogger('__main__')
 
@@ -39,21 +40,44 @@ class FeedPuller(object):
 
     def start_listening(self):
         gevent.spawn_later(15, self._activity_checker)
+        # Start the async event loop in a gevent greenlet
+        gevent.spawn(self._run_async_listener)
+
+    def _run_async_listener(self):
+        """Run the asyncio event loop for hpfeeds connection"""
+        try:
+            # Create new event loop for this greenlet
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # Run the async listener
+            loop.run_until_complete(self._async_listener())
+        except Exception as ex:
+            logger.exception('Exception in async listener: {0}'.format(ex))
+        finally:
+            try:
+                loop.close()
+            except:
+                pass
+
+    async def _async_listener(self):
+        """Async method to handle hpfeeds connection and message processing"""
         while self.enabled:
             try:
                 self.hpc = HpfeedsConnection(self.host, self.port, self.ident, self.secret)
                 
-                # Start the connection
-                self.hpc.start()
-                
-                # Subscribe to feeds
-                for feed in self.feeds:
-                    self.hpc.subscribe(feed)
-                
-                # Process messages
-                while self.enabled:
-                    try:
-                        ident, chan, payload = self.hpc.read()
+                # Wait for connection and subscribe to feeds
+                async with self.hpc as client:
+                    for feed in self.feeds:
+                        client.subscribe(feed)
+                    
+                    logger.info(f"Connected to HPFeeds broker, subscribed to {len(self.feeds)} channels")
+                    
+                    # Process messages
+                    async for ident, chan, payload in client:
+                        if not self.enabled:
+                            break
+                            
                         self.last_received = datetime.now()
                         if not any(x in chan for x in (';', '"', '{', '}')):
                             try:
@@ -65,36 +89,22 @@ class FeedPuller(object):
                                 self.database.insert_hpfeed(ident, chan, payload_str)
                             except UnicodeDecodeError:
                                 logger.warning(f"Failed to decode payload from {ident}:{chan}")
-                    except:
-                        # Connection lost, break inner loop to reconnect
-                        break
                             
             except Exception as ex:
-                print(ex)
-                logger.exception('Exception caught: {0}'.format(ex))
-                if self.hpc:
-                    try:
-                        self.hpc.stop()
-                    except:
-                        pass
-            # throttle
-            gevent.sleep(5)
+                logger.exception('Exception caught in async listener: {0}'.format(ex))
+                if not self.enabled:
+                    break
+                    
+            # Throttle reconnection attempts
+            await asyncio.sleep(5)
 
     def stop(self):
         logger.info("FeedPuller stopped.")
         self.enabled = False
-        if self.hpc:
-            self.hpc.stop()
-        self.enabled = False
 
     def _activity_checker(self):
         while self.enabled:
-            if self.hpc is not None:
-                difference = datetime.now() - self.last_received
-                if difference.seconds > 120:
-                    logger.warning('No activity for 120 seconds, forcing reconnect')
-                    try:
-                        self.hpc.stop()
-                    except:
-                        pass  # Connection might already be closed
+            difference = datetime.now() - self.last_received
+            if difference.seconds > 120:
+                logger.warning('No activity for 120 seconds - async client will auto-reconnect')
             gevent.sleep(120)

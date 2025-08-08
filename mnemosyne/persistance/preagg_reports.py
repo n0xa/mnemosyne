@@ -38,17 +38,17 @@ class ReportGenerator:
         query = {'channel': entry['channel'], 'date': date}
 
         update = {'$inc': {'hourly.{0}'.format(hour): 1}}
-        self.db.daily_stats.update(query, update, upsert=True)
+        self.db.daily_stats.update_one(query, update, upsert=True)
 
         # update total document
         channel = entry['channel'].replace('.', '_')
-        self.db.daily_stats.update({'_id': 'total'},
+        self.db.daily_stats.update_one({'_id': 'total'},
                                    {'$inc': {channel: 1}}, upsert=True)
 
     def do_legacy_hpfeeds(self):
-        max_objectid = self.db.hpfeed.find({}, fields={'_id': 1}).sort('_id', -1).limit(1)[0]['_id']
+        max_objectid = self.db.hpfeed.find({}, projection={'_id': 1}).sort('_id', -1).limit(1)[0]['_id']
         logger.info('Doing pre-aggregation of historic hpfeeds data.')
-        result = self.db.hpfeed.find({'_id': {'$lte': max_objectid}}, fields=['channel', 'timestamp'])
+        result = self.db.hpfeed.find({'_id': {'$lte': max_objectid}}, projection=['channel', 'timestamp'])
         items = 0
         for item in result:
             self.hpfeeds(item)
