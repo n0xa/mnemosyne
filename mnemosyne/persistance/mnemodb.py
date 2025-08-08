@@ -142,11 +142,11 @@ class MnemoDB(object):
                             'honeypot': document['honeypot']
                         }
                         values = dict((k, v) for k, v in document.items() if k not in ['ip', 'honeypot'])
-                        self.db[collection].update(query, {'$set': values}, upsert=True)
+                        self.db[collection].update_one(query, {'$set': values}, upsert=True)
                 else:
                     raise Warning('{0} is not a know collection type.'.format(collection))
                     # if we end up here everything if ok - setting hpfeed entry to normalized
-        self.db.hpfeed.update({'_id': hpfeed_id}, {'$set': {'normalized': True},
+        self.db.hpfeed.update_one({'_id': hpfeed_id}, {'$set': {'normalized': True},
                                                    '$unset': {'last_error': 1, 'last_error_timestamp': 1}})
 
     def insert_hpfeed(self, ident, channel, payload):
@@ -170,18 +170,18 @@ class MnemoDB(object):
                  'timestamp': timestamp,
                  'normalized': False}
         try:
-            self.db.hpfeed.insert(entry)
+            self.db.hpfeed.insert_one(entry)
         except InvalidStringData as err:
             logger.error(
                 'Failed to insert hpfeed data on {0} channel due to invalid string data. ({1})'.format(
                     entry['channel'], err))
 
-        self.db.counts.update(
+        self.db.counts.update_one(
             {'identifier': ident, 'date': timestamp.strftime('%Y%m%d')},
             {"$inc": {"event_count": 1}},
             upsert=True
         )
-        self.db.counts.update(
+        self.db.counts.update_one(
             {'identifier': channel, 'date': timestamp.strftime('%Y%m%d')},
             {"$inc": {"event_count": 1}},
             upsert=True
@@ -194,7 +194,7 @@ class MnemoDB(object):
         :param items: a list of hpfeed entries.
         """
         for item in items:
-            self.db.hpfeed.update({'_id': item['_id']},
+            self.db.hpfeed.update_one({'_id': item['_id']},
                                   {'$set':
                                    {'last_error': str(item['last_error']),
                                     'last_error_timestamp': item['last_error_timestamp']}
@@ -227,8 +227,8 @@ class MnemoDB(object):
         self.db.hpfeed.drop_indexes()
         logger.info('Indexes dropped(Elapse: {0}).'.format(time.time() - start))
         logger.info('Resetting normalization flags from hpfeeds collection.')
-        self.db.hpfeed.update({}, {"$set": {'normalized': False},
-                                   '$unset': {'last_error': 1, 'last_error_timestamp': 1}}, multi=True)
+        self.db.hpfeed.update_many({}, {"$set": {'normalized': False},
+                                   '$unset': {'last_error': 1, 'last_error_timestamp': 1}})
         logger.info('Done normalization flags from hpfeeds collection.(Elapse: {0}).'.format(time.time() - start))
         logger.info('Recreating indexes.')
         self.create_index()
@@ -243,10 +243,10 @@ class MnemoDB(object):
         result = {}
         for collection in self.db.list_collection_names():
             if collection not in ['system.indexes']:
-                count = self.db[collection].count()
+                count = self.db[collection].count_documents({})
                 result[collection] = count
         return result
 
     def get_hpfeed_error_count(self):
-        count = self.db.hpfeed.find({'last_error': {'$exists': 1}}).count()
+        count = self.db.hpfeed.count_documents({'last_error': {'$exists': 1}})
         return count
