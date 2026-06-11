@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 LABEL maintainer="n0xa"
 LABEL name="mnemosyne"
-LABEL version="1.9.1"
+LABEL version="2.2.1"
 LABEL release="1"
 LABEL summary="Community Honey Network mnemosyne server"
 LABEL description="mnemosyne is a normalizer for honeypot data and writes to mongodb"

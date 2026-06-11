@@ -76,19 +76,19 @@ def parse_config(config_file):
 
 
 def do_logging(file_log=None, loggly_token=None):
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s][%(filename)s] - %(message)s'
 
     formatter = logging.Formatter(LOG_FORMAT)
 
     if file_log:
-        file_log = logging.FileHandler(file_log)
-        file_log.setLevel(logging.DEBUG)
-        file_log.setFormatter(formatter)
-        logger.addHandler(file_log)
+        file_handler = logging.FileHandler(file_log)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
     console_log = logging.StreamHandler()
-    console_log.setLevel(logging.DEBUG)
+    console_log.setLevel(logging.INFO)
     console_log.setFormatter(formatter)
     logger.addHandler(console_log)
 
