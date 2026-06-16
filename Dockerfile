@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 LABEL maintainer="n0xa"
 LABEL name="mnemosyne"
-LABEL version="2.2.1"
+LABEL version="2.2.2"
 LABEL release="1"
 LABEL summary="Community Honey Network mnemosyne server"
 LABEL description="mnemosyne is a normalizer for honeypot data and writes to mongodb"
@@ -33,5 +33,9 @@ COPY scripts /opt/scripts
 COPY templates /opt/templates
 COPY entrypoint.sh /opt/
 RUN chmod 0755 /opt/entrypoint.sh
+
+RUN useradd --system --uid 995 --no-create-home --shell /usr/sbin/nologin mnemosyne \
+    && chown -R mnemosyne:mnemosyne /opt
+USER mnemosyne
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
