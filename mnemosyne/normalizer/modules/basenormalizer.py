@@ -51,7 +51,7 @@ class BaseNormalizer(object):
 
     def generate_checksum_list(self, data):
         result = {}
-        result['md5'] = hashlib.md5(data).hexdigest()
+        result['md5'] = hashlib.md5(data, usedforsecurity=False).hexdigest()
         result['sha1'] = hashlib.sha1(data).hexdigest()
         result['sha512'] = hashlib.sha512(data).hexdigest()
         return result
