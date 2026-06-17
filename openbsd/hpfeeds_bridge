@@ -1,0 +1,34 @@
+#!/bin/ksh
+
+daemon="/opt/chnserver/mnemosyne/hpfeeds_bridge_wrapper.sh"
+daemon_user="chn"
+daemon_timeout=30
+_pidfile="/var/run/hpfeeds_bridge.pid"
+
+. /etc/rc.d/rc.subr
+
+pexp=".*python.*hpfeeds_bridge.*"
+rc_bg=YES
+rc_reload=NO
+
+rc_start() {
+	doas -u chn /opt/chnserver/mnemosyne/hpfeeds_bridge_wrapper.sh \
+		>>/var/log/hpfeeds_bridge.log 2>&1 &
+	echo $! >"${_pidfile}"
+}
+
+rc_check() {
+	[ -f "${_pidfile}" ] || return 1
+	local _pid
+	_pid=$(cat "${_pidfile}")
+	kill -0 "${_pid}" 2>/dev/null
+}
+
+rc_stop() {
+	if [ -f "${_pidfile}" ]; then
+		kill $(cat "${_pidfile}") 2>/dev/null
+		rm -f "${_pidfile}"
+	fi
+}
+
+rc_cmd $1
