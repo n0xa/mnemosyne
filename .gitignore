@@ -49,3 +49,4 @@ server.key
 server.crt
 
 /env
+.claude/
